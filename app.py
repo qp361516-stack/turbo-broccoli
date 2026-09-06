@@ -1,4 +1,4 @@
-# ============================================================
+
 # app.py
 # Cardiac DSES Digital Twin - FINAL 28-CLASS ARCHITECTURE
 #
@@ -36,6 +36,8 @@
 
 from pathlib import Path
 import sys
+import tempfile
+import urllib.request
 
 import numpy as np
 import pandas as pd
@@ -65,13 +67,64 @@ SEARCH_DIRS = [
     BASE_DIR / "pkl+joblib",
 ]
 
+# Large trained artifacts can also be downloaded automatically from the
+# GitHub Release when Streamlit Cloud does not have them in the repository.
+RELEASE_BASE = (
+    "https://github.com/qp361516-stack/turbo-broccoli/"
+    "releases/download/v1.0/"
+)
+RELEASE_ASSETS = {
+    "final_28class_dses_classifier.joblib": (
+        RELEASE_BASE + "final_28class_dses_classifier.joblib"
+    ),
+    "final_28class_dses_classifier(1).joblib": (
+        RELEASE_BASE + "final_28class_dses_classifier(1).joblib"
+    ),
+    "disease_dses_rf.joblib": (
+        RELEASE_BASE + "disease_dses_rf.joblib"
+    ),
+}
+
+DOWNLOAD_DIR = Path(tempfile.gettempdir()) / "cardiac_dses_models"
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 def resolve_file(filename):
-    """Return the first existing file in the supported runtime directories."""
+    """Return the first existing local or cached runtime artifact."""
     for directory in SEARCH_DIRS:
         candidate = directory / filename
         if candidate.exists():
             return candidate
+
+    cached = DOWNLOAD_DIR / filename
+    if cached.exists():
+        return cached
+
     return None
+
+
+def ensure_release_asset(filename):
+    """Download a known GitHub Release asset when it is not local."""
+    existing = resolve_file(filename)
+    if existing is not None:
+        return existing, None
+
+    url = RELEASE_ASSETS.get(filename)
+    if url is None:
+        return None, RuntimeError(f"No release URL configured for {filename}")
+
+    target = DOWNLOAD_DIR / filename
+    try:
+        urllib.request.urlretrieve(url, target)
+        if not target.exists() or target.stat().st_size == 0:
+            raise RuntimeError("Downloaded file is missing or empty.")
+        return target, None
+    except Exception as exc:
+        try:
+            if target.exists():
+                target.unlink()
+        except OSError:
+            pass
+        return None, exc
 
 
 REQUIRED_MODULES = [
@@ -106,8 +159,31 @@ for filename in REQUIRED_MODULES:
 
 resolved_artifacts = {}
 
+# Auto-download the two large model files used by the final runtime.
+for release_name in ("disease_dses_rf.joblib", "final_28class_dses_classifier.joblib"):
+    path, error = ensure_release_asset(release_name)
+    if path is not None:
+        resolved_artifacts[release_name] = path
+    elif error is not None:
+        # The classifier may exist under the duplicate-name filename.
+        if release_name == "final_28class_dses_classifier.joblib":
+            alt_path, alt_error = ensure_release_asset(
+                "final_28class_dses_classifier(1).joblib"
+            )
+            if alt_path is not None:
+                resolved_artifacts[release_name] = alt_path
+            else:
+                missing.append(
+                    f"pkl+joblib/{release_name} "
+                    f"(Release download failed: {error}; alternate filename also failed: {alt_error})"
+                )
+        else:
+            missing.append(
+                f"pkl+joblib/{release_name} (Release download failed: {error})"
+            )
+
+# Resolve the smaller artifacts from the repository.
 for filename in [
-    "disease_dses_rf.joblib",
     "disease_dses_model_columns.joblib",
     "disease_dses_model_medians.joblib",
     "final_28class_feature_columns.joblib",
@@ -117,13 +193,6 @@ for filename in [
         missing.append(f"pkl+joblib/{filename}")
     else:
         resolved_artifacts[filename] = path
-
-# The final classifier may have been saved as (1) by the file system.
-classifier_path = next((resolve_file(name) for name in CLASSIFIER_FILENAMES if resolve_file(name) is not None), None)
-if classifier_path is None:
-    missing.append("pkl+joblib/final_28class_dses_classifier.joblib (or final_28class_dses_classifier(1).joblib)")
-else:
-    resolved_artifacts["final_28class_dses_classifier.joblib"] = classifier_path
 
 
 # ============================================================
