@@ -84,7 +84,14 @@ REQUIRED_ARTIFACTS = [
     "disease_dses_model_columns.joblib",
     "disease_dses_model_medians.joblib",
     "final_28class_dses_classifier.joblib",
+    "final_28class_dses_classifier(1).joblib",
     "final_28class_feature_columns.joblib",
+]
+
+# Accept the generated classifier filename with or without the duplicate-name suffix.
+CLASSIFIER_FILENAMES = [
+    "final_28class_dses_classifier.joblib",
+    "final_28class_dses_classifier(1).joblib",
 ]
 
 missing = []
@@ -99,12 +106,24 @@ for filename in REQUIRED_MODULES:
 
 resolved_artifacts = {}
 
-for filename in REQUIRED_ARTIFACTS:
+for filename in [
+    "disease_dses_rf.joblib",
+    "disease_dses_model_columns.joblib",
+    "disease_dses_model_medians.joblib",
+    "final_28class_feature_columns.joblib",
+]:
     path = resolve_file(filename)
     if path is None:
         missing.append(f"pkl+joblib/{filename}")
     else:
         resolved_artifacts[filename] = path
+
+# The final classifier may have been saved as (1) by the file system.
+classifier_path = next((resolve_file(name) for name in CLASSIFIER_FILENAMES if resolve_file(name) is not None), None)
+if classifier_path is None:
+    missing.append("pkl+joblib/final_28class_dses_classifier.joblib (or final_28class_dses_classifier(1).joblib)")
+else:
+    resolved_artifacts["final_28class_dses_classifier.joblib"] = classifier_path
 
 
 # ============================================================
