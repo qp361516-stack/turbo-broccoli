@@ -221,7 +221,7 @@ def build_features(df: pd.DataFrame, refs=None) -> pd.DataFrame:
 def make_classifier() -> ExtraTreesClassifier:
     return ExtraTreesClassifier(
         n_estimators=500,
-        max_features=0.5,
+        max_features=0.75,
         min_samples_leaf=1,
         random_state=42,
         n_jobs=-1,
