@@ -1,4 +1,4 @@
-
+# ============================================================
 # app.py
 # Cardiac DSES Digital Twin - FINAL 28-CLASS ARCHITECTURE
 #
@@ -38,6 +38,7 @@ from pathlib import Path
 import sys
 import tempfile
 import urllib.request
+import joblib
 
 import numpy as np
 import pandas as pd
@@ -67,8 +68,7 @@ SEARCH_DIRS = [
     BASE_DIR / "pkl+joblib",
 ]
 
-# Large trained artifacts can also be downloaded automatically from the
-# GitHub Release when Streamlit Cloud does not have them in the repository.
+# GitHub Release assets used when the large models are not stored locally.
 RELEASE_BASE = (
     "https://github.com/qp361516-stack/turbo-broccoli/"
     "releases/download/v1.0/"
@@ -77,78 +77,73 @@ RELEASE_ASSETS = {
     "final_28class_dses_classifier.joblib": (
         RELEASE_BASE + "final_28class_dses_classifier.joblib"
     ),
-    "final_28class_dses_classifier(1).joblib": (
-        RELEASE_BASE + "final_28class_dses_classifier(1).joblib"
-    ),
     "disease_dses_rf.joblib": (
         RELEASE_BASE + "disease_dses_rf.joblib"
     ),
 }
-
 DOWNLOAD_DIR = Path(tempfile.gettempdir()) / "cardiac_dses_models"
 DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+# Accept the exact classifier filename currently present in your repository,
+# as well as the standard filename and the previous duplicate-suffix variants.
+CLASSIFIER_CANDIDATES = [
+    "final_28class_dses_classifier(1) (1).joblib",
+    "final_28class_dses_classifier(1).joblib",
+    "final_28class_dses_classifier.joblib",
+]
+FEATURE_COLUMN_CANDIDATES = [
+    "final_28class_feature_columns.joblib",
+]
+
 def resolve_file(filename):
-    """Return the first existing local or cached runtime artifact."""
+    """Return the first existing file in supported runtime or download directories."""
     for directory in SEARCH_DIRS:
         candidate = directory / filename
         if candidate.exists():
             return candidate
-
     cached = DOWNLOAD_DIR / filename
     if cached.exists():
         return cached
-
     return None
 
-
 def ensure_release_asset(filename):
-    """Download a known GitHub Release asset when it is not local."""
+    """Download a known Release asset only when it is not already local."""
     existing = resolve_file(filename)
     if existing is not None:
         return existing, None
-
     url = RELEASE_ASSETS.get(filename)
-    if url is None:
-        return None, RuntimeError(f"No release URL configured for {filename}")
-
+    if not url:
+        return None, RuntimeError(f"No Release URL configured for {filename}")
     target = DOWNLOAD_DIR / filename
     try:
         urllib.request.urlretrieve(url, target)
-        if not target.exists() or target.stat().st_size == 0:
-            raise RuntimeError("Downloaded file is missing or empty.")
+        if not target.exists():
+            raise RuntimeError("Download completed but the model file was not created.")
         return target, None
     except Exception as exc:
-        try:
-            if target.exists():
+        if target.exists():
+            try:
                 target.unlink()
-        except OSError:
-            pass
+            except OSError:
+                pass
         return None, exc
-
 
 REQUIRED_MODULES = [
     "digital_twin.py",
     "ml_final_28class_FIXED.py",
 ]
 
+# These are mandatory. Feature columns are optional because they can be
+# reconstructed from sklearn's feature_names_in_ on the saved classifier.
 REQUIRED_ARTIFACTS = [
     "disease_dses_rf.joblib",
     "disease_dses_model_columns.joblib",
     "disease_dses_model_medians.joblib",
-    "final_28class_dses_classifier.joblib",
-    "final_28class_dses_classifier(1).joblib",
-    "final_28class_feature_columns.joblib",
-]
-
-# Accept the generated classifier filename with or without the duplicate-name suffix.
-CLASSIFIER_FILENAMES = [
-    "final_28class_dses_classifier.joblib",
-    "final_28class_dses_classifier(1).joblib",
 ]
 
 missing = []
 resolved_modules = {}
+resolved_artifacts = {}
 
 for filename in REQUIRED_MODULES:
     path = resolve_file(filename)
@@ -157,42 +152,47 @@ for filename in REQUIRED_MODULES:
     else:
         resolved_modules[filename] = path
 
-resolved_artifacts = {}
+# Resolve/download the large Expected-DSES RF first.
+rf_path, rf_error = ensure_release_asset("disease_dses_rf.joblib")
+if rf_path is not None:
+    resolved_artifacts["disease_dses_rf.joblib"] = rf_path
+elif rf_error is not None:
+    missing.append(f"pkl+joblib/disease_dses_rf.joblib (Release download failed: {rf_error})")
 
-# Auto-download the two large model files used by the final runtime.
-for release_name in ("disease_dses_rf.joblib", "final_28class_dses_classifier.joblib"):
-    path, error = ensure_release_asset(release_name)
-    if path is not None:
-        resolved_artifacts[release_name] = path
-    elif error is not None:
-        # The classifier may exist under the duplicate-name filename.
-        if release_name == "final_28class_dses_classifier.joblib":
-            alt_path, alt_error = ensure_release_asset(
-                "final_28class_dses_classifier(1).joblib"
-            )
-            if alt_path is not None:
-                resolved_artifacts[release_name] = alt_path
-            else:
-                missing.append(
-                    f"pkl+joblib/{release_name} "
-                    f"(Release download failed: {error}; alternate filename also failed: {alt_error})"
-                )
-        else:
-            missing.append(
-                f"pkl+joblib/{release_name} (Release download failed: {error})"
-            )
-
-# Resolve the smaller artifacts from the repository.
 for filename in [
     "disease_dses_model_columns.joblib",
     "disease_dses_model_medians.joblib",
-    "final_28class_feature_columns.joblib",
 ]:
     path = resolve_file(filename)
     if path is None:
         missing.append(f"pkl+joblib/{filename}")
     else:
         resolved_artifacts[filename] = path
+
+# Resolve the classifier from any supported local filename first; if none is
+# available, fall back to the standard GitHub Release asset.
+classifier_path = None
+for candidate in CLASSIFIER_CANDIDATES:
+    path = resolve_file(candidate)
+    if path is not None:
+        classifier_path = path
+        break
+if classifier_path is None:
+    classifier_path, classifier_error = ensure_release_asset("final_28class_dses_classifier.joblib")
+    if classifier_path is None:
+        missing.append(f"pkl+joblib/final_28class_dses_classifier.joblib (Release download failed: {classifier_error})")
+resolved_artifacts["final_28class_dses_classifier.joblib"] = classifier_path
+
+# Feature-column file is optional; we will reconstruct it from the classifier
+# below when necessary.
+feature_cols_path = None
+for candidate in FEATURE_COLUMN_CANDIDATES:
+    path = resolve_file(candidate)
+    if path is not None:
+        feature_cols_path = path
+        break
+if feature_cols_path is not None:
+    resolved_artifacts["final_28class_feature_columns.joblib"] = feature_cols_path
 
 
 # ============================================================
@@ -231,9 +231,26 @@ if not missing:
         _ml_runtime.CLF_PATH = resolved_artifacts[
             "final_28class_dses_classifier.joblib"
         ]
-        _ml_runtime.FEATURE_COLS_PATH = resolved_artifacts[
-            "final_28class_feature_columns.joblib"
-        ]
+
+        # The feature-column artifact is optional. If it is missing, recover
+        # the exact training feature names from the saved sklearn classifier.
+        if "final_28class_feature_columns.joblib" in resolved_artifacts:
+            _ml_runtime.FEATURE_COLS_PATH = resolved_artifacts[
+                "final_28class_feature_columns.joblib"
+            ]
+        else:
+            clf = joblib.load(_ml_runtime.CLF_PATH)
+            feature_names = getattr(clf, "feature_names_in_", None)
+            if feature_names is None:
+                raise ValueError(
+                    "final_28class_feature_columns.joblib is missing and the saved "
+                    "classifier does not expose sklearn feature_names_in_. "
+                    "Please upload the matching feature-column artifact."
+                )
+            generated = DOWNLOAD_DIR / "final_28class_feature_columns.joblib"
+            joblib.dump(list(feature_names), generated)
+            _ml_runtime.FEATURE_COLS_PATH = generated
+            resolved_artifacts["final_28class_feature_columns.joblib"] = generated
 
         build_features = _ml_runtime.build_features
         predict_patient = _ml_runtime.predict_patient
