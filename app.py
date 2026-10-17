@@ -1,6 +1,8 @@
 # ============================================================
 # app.py
 # Cardiac DSES Digital Twin - FINAL 28-CLASS ARCHITECTURE
+# Reported benchmark: 97.20% Top-1 scenario-recovery consistency on an in-silico
+# benchmark; this is not clinical diagnostic accuracy.
 #
 # This app uses the final multiclass architecture:
 #
@@ -61,10 +63,13 @@ BASE_DIR = (
 # 2. ROBUST MODEL / ARTIFACT PATHS
 # ============================================================
 
-# Python modules and trained artifacts may be stored either beside
-# app.py or inside the repository's pkl+joblib folder.
+# Python modules and trained artifacts may be stored beside app.py or in
+# either spelling of the artifact folder used in prior repository revisions.
+# The current repository uses pkl+joblibs; pkl+joblib remains supported for
+# older deployments.
 SEARCH_DIRS = [
     BASE_DIR,
+    BASE_DIR / "pkl+joblibs",
     BASE_DIR / "pkl+joblib",
 ]
 
@@ -157,7 +162,10 @@ rf_path, rf_error = ensure_release_asset("disease_dses_rf.joblib")
 if rf_path is not None:
     resolved_artifacts["disease_dses_rf.joblib"] = rf_path
 elif rf_error is not None:
-    missing.append(f"pkl+joblib/disease_dses_rf.joblib (Release download failed: {rf_error})")
+    missing.append(
+        f"disease_dses_rf.joblib (checked app root and both artifact-folder names; "
+        f"Release download failed: {rf_error})"
+    )
 
 for filename in [
     "disease_dses_model_columns.joblib",
@@ -165,7 +173,9 @@ for filename in [
 ]:
     path = resolve_file(filename)
     if path is None:
-        missing.append(f"pkl+joblib/{filename}")
+        missing.append(
+            f"{filename} (checked app root, pkl+joblibs/, and pkl+joblib/)"
+        )
     else:
         resolved_artifacts[filename] = path
 
@@ -180,7 +190,10 @@ for candidate in CLASSIFIER_CANDIDATES:
 if classifier_path is None:
     classifier_path, classifier_error = ensure_release_asset("final_28class_dses_classifier.joblib")
     if classifier_path is None:
-        missing.append(f"pkl+joblib/final_28class_dses_classifier.joblib (Release download failed: {classifier_error})")
+        missing.append(
+            "final_28class_dses_classifier.joblib (checked app root and both "
+            f"artifact-folder names; Release download failed: {classifier_error})"
+        )
 resolved_artifacts["final_28class_dses_classifier.joblib"] = classifier_path
 
 # Feature-column file is optional; we will reconstruct it from the classifier
@@ -205,7 +218,7 @@ if not missing:
         # This supports both repository layouts:
         #   /app.py + /digital_twin.py + /ml_final_28class_FIXED.py
         # and
-        #   /app.py + /pkl+joblib/{digital_twin.py, ml_final_28class_FIXED.py}
+        #   /app.py + /pkl+joblibs/ or /pkl+joblib/{digital_twin.py, ml_final_28class_FIXED.py}
         for module_path in resolved_modules.values():
             if module_path.parent.exists():
                 sys.path.insert(0, str(module_path.parent))
@@ -262,7 +275,9 @@ if not missing:
         )
         st.title("Cardiac DSES Digital Twin")
         st.error(
-            "The 90.71% architecture could not be loaded."
+            "The 28-class model runtime could not be loaded. "
+            "Check the traceback and confirm that the Python modules and model artifacts "
+            "belong to the same model version."
         )
         st.exception(exc)
         st.stop()
@@ -274,12 +289,13 @@ else:
     st.title("Cardiac DSES Digital Twin")
 
     st.error(
-        "Required 90.71% architecture files are missing."
+        "Required 28-class model files are missing. The app has stopped before "
+        "running a prediction so it does not silently use an incomplete model."
     )
 
     st.write(
         "Expected Python modules and trained model artifacts either "
-        "beside app.py or inside `pkl+joblib/`:"
+        "beside app.py or inside `pkl+joblibs/` or `pkl+joblib/`:"
     )
 
     for filename in missing:
@@ -303,9 +319,212 @@ try:
 except Exception:
     pass
 
-st.title("Cardio-Thermodynamic Digital Twin")
+# ============================================================
+# 4A. PROFESSIONAL APPLICATION THEME
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+      :root {
+        --cardio-navy: #10243A;
+        --cardio-blue: #176B87;
+        --cardio-teal: #1F9D8B;
+        --cardio-muted: #627386;
+        --cardio-border: #DCE5ED;
+        --cardio-panel: #F5F8FB;
+      }
+
+      .stApp {
+        background:
+          radial-gradient(ellipse at top right, rgba(31,157,139,.07), transparent 34%),
+          linear-gradient(180deg, #F8FAFC 0%, #F3F7FA 100%);
+      }
+
+      [data-testid="stHeader"] {
+        background: rgba(248,250,252,.86);
+      }
+
+      [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #10243A 0%, #173650 100%);
+        border-right: 1px solid rgba(255,255,255,.10);
+      }
+
+      [data-testid="stSidebar"] * {
+        color: #F4F8FB;
+      }
+
+      [data-testid="stSidebar"] [data-baseweb="select"] > div,
+      [data-testid="stSidebar"] input {
+        background-color: rgba(255,255,255,.97);
+        color: #10243A;
+        border-radius: 9px;
+      }
+
+      [data-testid="stSidebar"] [data-baseweb="select"] * {
+        color: #10243A;
+      }
+
+      [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,.20);
+      }
+
+      [data-testid="stSidebar"] h2,
+      [data-testid="stSidebar"] h3 {
+        letter-spacing: .02em;
+      }
+
+      .hero {
+        padding: 1.35rem 1.55rem;
+        margin: .25rem 0 1.25rem 0;
+        border-radius: 18px;
+        color: white;
+        background: linear-gradient(120deg, #10243A 0%, #176B87 72%, #1F9D8B 100%);
+        box-shadow: 0 10px 28px rgba(16,36,58,.14);
+      }
+
+      .hero-eyebrow {
+        font-size: .76rem;
+        font-weight: 700;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        opacity: .82;
+        margin-bottom: .35rem;
+      }
+
+      .hero h1 {
+        color: white;
+        font-size: clamp(1.7rem, 3vw, 2.45rem);
+        line-height: 1.15;
+        margin: 0 0 .55rem 0;
+        font-weight: 750;
+      }
+
+      .hero p {
+        color: rgba(255,255,255,.88);
+        margin: 0;
+        font-size: .98rem;
+      }
+
+      h2, h3 {
+        color: var(--cardio-navy);
+        letter-spacing: -.015em;
+      }
+
+      [data-testid="stMetric"] {
+        background: white;
+        border: 1px solid var(--cardio-border);
+        border-radius: 14px;
+        padding: 1rem 1.05rem;
+        box-shadow: 0 3px 12px rgba(16,36,58,.045);
+      }
+
+      [data-testid="stMetricLabel"] {
+        color: var(--cardio-muted);
+        font-weight: 650;
+      }
+
+      [data-testid="stMetricValue"] {
+        color: var(--cardio-navy);
+        font-weight: 750;
+      }
+
+      [data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 14px;
+      }
+
+      div[data-testid="stDataFrame"] {
+        border: 1px solid var(--cardio-border);
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+      }
+
+      .stButton > button {
+        border-radius: 10px;
+        font-weight: 700;
+        min-height: 2.8rem;
+        transition: transform .15s ease, box-shadow .15s ease;
+      }
+
+      .stButton > button[kind="primary"] {
+        background: linear-gradient(110deg, #176B87, #1F9D8B);
+        border: 0;
+        color: white;
+        box-shadow: 0 5px 14px rgba(23,107,135,.22);
+      }
+
+      .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 7px 18px rgba(16,36,58,.14);
+      }
+
+      [data-testid="stAlert"] {
+        border-radius: 12px;
+      }
+
+      .section-note {
+        color: var(--cardio-muted);
+        font-size: .92rem;
+        margin-top: -.55rem;
+        margin-bottom: .85rem;
+      }
+
+      .app-footer {
+        color: #718096;
+        font-size: .78rem;
+        border-top: 1px solid var(--cardio-border);
+        margin-top: 2rem;
+        padding-top: 1rem;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; }
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <section class="hero">
+      <div class="hero-eyebrow">Computational Cardiology · Research Prototype</div>
+      <h1>Cardiac Digital Twin</h1>
+      <p>Disease-Specific Entropy Signature (DSES) analysis and 28-class model inference</p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.caption(
-    "Final 28-class DSES model | Resting patient | Smoking fixed to NO"
+    "Model configuration: 28 candidate disease classes · Resting-state inputs · "
+    "Smoking fixed to NO"
+)
+
+st.subheader("Reported In-Silico Benchmark")
+st.markdown(
+    '<p class="section-note">Metrics reported in the extended report for 1,000 noisy '
+    'realizations from 28 literature-informed scenario families.</p>',
+    unsafe_allow_html=True,
+)
+
+benchmark_columns = st.columns(4)
+benchmark_columns[0].metric("Top-1 Scenario-Recovery Consistency", "97.20%")
+benchmark_columns[1].metric("Balanced Accuracy", "97.18%")
+benchmark_columns[2].metric("Macro-F1", "97.18%")
+benchmark_columns[3].metric("Weighted F1", "97.19%")
+st.info(
+    "These are benchmark results reported for the constructed in-silico scenarios. "
+    "The 97.20% result represents 972 correct scenario recoveries out of 1,000 "
+    "noisy realizations. These metrics measure recovery of scenario families, not "
+    "clinical diagnostic accuracy or validated probabilities for individual patients. "
+    "Clinical validation on independently labelled patient cohorts remains necessary."
+)
+st.caption(
+    "Reported 95% binomial confidence interval for Top-1 scenario-recovery consistency: "
+    "approximately 96.2%–98.2%. This reflects the constructed benchmark, not a "
+    "clinical patient-population validation interval."
 )
 
 with st.expander("Runtime file check", expanded=False):
@@ -321,11 +540,16 @@ with st.expander("Runtime file check", expanded=False):
 
 @st.cache_resource(show_spinner=False)
 def get_references():
-    # If the Digital Twin module lives in pkl+joblib, its default
-    # reference workbook/cache are resolved relative to that folder.
+    # Resolve the reference workbook relative to whichever supported folder
+    # contains digital_twin.py, then fall back to BASE_DIR.
     dt_module_dir = resolved_modules["digital_twin.py"].parent
 
+    workbook_name = "Cardiac_Disease_Synchronized_Dataset_Patient_1_Literature_Conditioned_CLEAN.xlsx"
     workbook_candidates = [
+        # Canonical repository filename first.
+        dt_module_dir / workbook_name,
+        BASE_DIR / workbook_name,
+        # Retain support for older downloaded copies with duplicate suffixes.
         dt_module_dir / "Cardiac_Disease_Synchronized_Dataset_Patient_1_Literature_Conditioned_CLEAN (4).xlsx",
         dt_module_dir / "Cardiac_Disease_Synchronized_Dataset_Patient_1_Literature_Conditioned_CLEAN (4)_2.xlsx",
         BASE_DIR / "Cardiac_Disease_Synchronized_Dataset_Patient_1_Literature_Conditioned_CLEAN (4).xlsx",
@@ -596,11 +820,45 @@ if run_button:
                 patient,
                 refs,
             )
+            if not isinstance(dt_result, dict) or "common" not in dt_result:
+                raise ValueError(
+                    "The Digital Twin returned an unexpected result structure; "
+                    "the expected 'common' physiological state is missing."
+                )
 
             final_predictions = predict_patient(
                 patient,
                 refs,
             )
+
+            if not isinstance(final_predictions, pd.DataFrame):
+                final_predictions = pd.DataFrame(final_predictions)
+            required_prediction_columns = {"Disease", "Probability"}
+            missing_prediction_columns = required_prediction_columns.difference(
+                final_predictions.columns
+            )
+            if missing_prediction_columns:
+                raise ValueError(
+                    "The prediction function returned an unexpected schema. Missing: "
+                    + ", ".join(sorted(missing_prediction_columns))
+                )
+            if final_predictions.empty:
+                raise ValueError("The classifier returned no disease predictions.")
+
+            final_predictions = final_predictions.copy()
+            final_predictions["Probability"] = pd.to_numeric(
+                final_predictions["Probability"], errors="coerce"
+            )
+            if (
+                final_predictions["Probability"].isna().any()
+                or not np.isfinite(final_predictions["Probability"].to_numpy()).all()
+            ):
+                raise ValueError(
+                    "The classifier returned missing or non-finite probabilities."
+                )
+            final_predictions = final_predictions.sort_values(
+                "Probability", ascending=False
+            ).reset_index(drop=True)
 
             # Build the same final feature vector used during
             # final-classifier development so the intermediate
@@ -632,6 +890,15 @@ if run_button:
                 model_input,
                 refs,
             )
+            if not isinstance(final_features, pd.DataFrame):
+                final_features = pd.DataFrame(final_features)
+            if final_features.empty:
+                raise ValueError("Feature construction returned an empty feature matrix.")
+            if len(final_features) != 1:
+                raise ValueError(
+                    "Feature construction should return exactly one row for the "
+                    "single patient entered."
+                )
 
         except Exception as exc:
             st.error(
@@ -660,7 +927,11 @@ if run_button:
     # TOP METRICS
     # ========================================================
 
-    st.header("Final Prediction")
+    st.header("Prediction Summary")
+    st.markdown(
+        '<p class="section-note">The leading class and derived cardiovascular metrics for the entered resting-state profile.</p>',
+        unsafe_allow_html=True,
+    )
 
     c1, c2, c3, c4, c5 = st.columns(5)
 
@@ -698,7 +969,11 @@ if run_button:
     # ARCHITECTURE PIPELINE
     # ========================================================
 
-    st.header("90.71% Architecture")
+    st.header("Model Architecture")
+    st.markdown(
+        '<p class="section-note">Overview of the feature-construction and classification sequence.</p>',
+        unsafe_allow_html=True,
+    )
 
     pipeline = go.Figure(
         go.Sankey(
@@ -745,7 +1020,11 @@ if run_button:
     # 28-CLASS RANKING TABLE
     # ========================================================
 
-    st.header("28-Class Disease Ranking")
+    st.header("Disease Ranking")
+    st.markdown(
+        '<p class="section-note">All candidate classes ordered by the final classifier output.</p>',
+        unsafe_allow_html=True,
+    )
 
     ranking = final_predictions.copy()
 
@@ -812,8 +1091,10 @@ if run_button:
     # PATIENT DSES / EXPECTED DSES / RESIDUALS
     # ========================================================
 
-    st.header(
-        "DSES Features Used by the Final Classifier"
+    st.header("DSES Feature Analysis")
+    st.markdown(
+        '<p class="section-note">Patient DSES, expected DSES, and residual values for each candidate disease.</p>',
+        unsafe_allow_html=True,
     )
 
     dses_rows = []
@@ -1236,21 +1517,15 @@ if run_button:
                     "Global stress summaries",
                     "DT physiological features",
                     "Compact clinical layer",
+                    "Total final input features",
                 ],
-                "Features": [
+                "Feature Count": [
                     28,
                     28,
                     28,
                     5,
                     5,
                     12,
-                ],
-                "Total": [
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
                     106,
                 ],
             }
@@ -1283,3 +1558,16 @@ else:
         "Enter the patient's resting parameters in the sidebar "
         "and click **RUN 28-CLASS MODEL**."
     )
+
+
+st.markdown(
+    """
+    <div class="app-footer">
+      <strong>Research-use prototype</strong> · Outputs are model-generated estimates,
+      not a confirmed diagnosis. The reported in-silico benchmark metrics are not
+      clinical diagnostic accuracy. Validate on independently labelled patient cohorts
+      before making any clinical claims or decisions.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
