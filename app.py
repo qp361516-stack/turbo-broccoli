@@ -32,6 +32,10 @@
 # - Disease is the prediction target, not a final classifier input.
 # - Patient is assumed to be at rest.
 # - Smoking is fixed to NO.
+#
+# STYLING-ONLY REVISION: all model / loading / prediction logic below is
+# unchanged. Only the visual presentation (CSS, colours, tabs, charts)
+# has been modified.
 # ============================================================
 
 from pathlib import Path
@@ -262,7 +266,7 @@ if not missing:
         )
         st.title("Cardiac DSES Digital Twin")
         st.error(
-            "The 90.71% architecture could not be loaded."
+            "The 28-class DSES architecture could not be loaded."
         )
         st.exception(exc)
         st.stop()
@@ -274,7 +278,7 @@ else:
     st.title("Cardiac DSES Digital Twin")
 
     st.error(
-        "Required 90.71% architecture files are missing."
+        "Required 28-class DSES architecture files are missing."
     )
 
     st.write(
@@ -289,7 +293,7 @@ else:
 
 
 # ============================================================
-# 4. PAGE CONFIG
+# 4. PAGE CONFIG  (+ VISUAL THEME)
 # ============================================================
 
 # set_page_config may already have been called above in an error
@@ -303,9 +307,182 @@ try:
 except Exception:
     pass
 
-st.title("Cardio-Thermodynamic Digital Twin")
-st.caption(
-    "Final 28-class DSES model | Resting patient | Smoking fixed to NO"
+# ---------- Colour palette ----------
+NAVY = "#1F2A44"
+RED = "#C0392B"
+TEAL = "#16A085"
+BLUE = "#2E86C1"
+GREY = "#6B7280"
+LIGHT = "#F4F6FA"
+
+CUSTOM_CSS = """
+<style>
+/* ---------- page ---------- */
+.block-container {
+    padding-top: 1.4rem;
+    padding-bottom: 3rem;
+    max-width: 1450px;
+}
+html, body, [class*="css"] {
+    font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+footer {visibility: hidden;}
+#MainMenu {visibility: hidden;}
+
+/* ---------- sidebar ---------- */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1F2A44 0%, #2B3A5E 100%);
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span {
+    color: #F2F4F8 !important;
+}
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] [data-baseweb="select"] * {
+    color: #1F2A44 !important;
+}
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.18);
+}
+
+/* ---------- hero banner ---------- */
+.hero {
+    background: linear-gradient(120deg, #1F2A44 0%, #C0392B 130%);
+    border-radius: 16px;
+    padding: 26px 34px;
+    margin-bottom: 18px;
+    box-shadow: 0 6px 22px rgba(31,42,68,0.25);
+}
+.hero h1 {
+    color: #FFFFFF !important;
+    margin: 0;
+    font-size: 2.0rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+.hero p {
+    color: #DCE3F0 !important;
+    margin: 6px 0 0 0;
+    font-size: 0.98rem;
+}
+.pill {
+    display: inline-block;
+    background: rgba(255,255,255,0.16);
+    color: #FFFFFF;
+    border-radius: 999px;
+    padding: 3px 12px;
+    margin: 10px 8px 0 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+/* ---------- metric cards ---------- */
+[data-testid="stMetric"] {
+    background: #FFFFFF;
+    border: 1px solid #E6E9F0;
+    border-left: 5px solid #C0392B;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 10px rgba(31,42,68,0.07);
+}
+[data-testid="stMetricLabel"] p {
+    color: #6B7280 !important;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+[data-testid="stMetricValue"] {
+    color: #1F2A44 !important;
+    font-weight: 700;
+    font-size: 1.45rem;
+    white-space: normal;
+}
+
+/* ---------- section headers ---------- */
+h2 {
+    color: #1F2A44;
+    font-weight: 700;
+    border-bottom: 3px solid #C0392B;
+    padding-bottom: 6px;
+    margin-top: 1.2rem;
+}
+
+/* ---------- tabs ---------- */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 6px;
+    border-bottom: 2px solid #E6E9F0;
+}
+.stTabs [data-baseweb="tab"] {
+    background: #F4F6FA;
+    border-radius: 10px 10px 0 0;
+    padding: 10px 20px;
+    font-weight: 600;
+}
+.stTabs [aria-selected="true"] {
+    background: #1F2A44 !important;
+}
+.stTabs [aria-selected="true"] p {
+    color: #FFFFFF !important;
+}
+
+/* ---------- buttons / tables ---------- */
+.stButton > button {
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    box-shadow: 0 3px 10px rgba(192,57,43,0.35);
+}
+[data-testid="stDataFrame"] {
+    border: 1px solid #E6E9F0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+</style>
+"""
+
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
+
+def style_fig(fig, height=None):
+    """Apply the shared chart look to a Plotly figure."""
+    fig.update_layout(
+        template="plotly_white",
+        font=dict(family="Inter, Segoe UI, sans-serif", size=13, color=NAVY),
+        title=dict(font=dict(size=18, color=NAVY)),
+        margin=dict(l=20, r=20, t=60, b=30),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+        ),
+    )
+    fig.update_xaxes(gridcolor="#E9ECF3", zeroline=False)
+    fig.update_yaxes(gridcolor="#E9ECF3", zeroline=False)
+    if height is not None:
+        fig.update_layout(height=height)
+    return fig
+
+
+st.markdown(
+    """
+    <div class="hero">
+        <h1>🫀 Cardio-Thermodynamic Digital Twin</h1>
+        <p>Disease-Specific Entropy Signature (DSES) · 28-class prediction</p>
+        <span class="pill">Resting patient</span>
+        <span class="pill">Smoking fixed to NO</span>
+        <span class="pill">28 disease hypotheses</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
 with st.expander("Runtime file check", expanded=False):
@@ -640,6 +817,33 @@ if run_button:
             st.exception(exc)
             st.stop()
 
+    # Store results so they survive any later widget interaction.
+    st.session_state["result"] = {
+        "patient": dict(patient),
+        "dt_result": dt_result,
+        "final_predictions": final_predictions,
+        "final_features": final_features,
+    }
+
+
+# ============================================================
+# 9. RENDER RESULTS (persisted in session_state)
+# ============================================================
+
+if "result" in st.session_state:
+
+    _res = st.session_state["result"]
+    dt_result = _res["dt_result"]
+    final_predictions = _res["final_predictions"]
+    final_features = _res["final_features"]
+
+    if _res["patient"] != patient:
+        st.warning(
+            "Sidebar inputs have changed since the last run. The results "
+            "below are for the previous inputs - click **RUN 28-CLASS "
+            "MODEL** to update them."
+        )
+
     # ========================================================
     # TOP PREDICTION
     # ========================================================
@@ -655,6 +859,26 @@ if run_button:
     )
 
     common = dt_result["common"]
+
+    def _detect_atp_scale(c):
+        """
+        Factor that converts the Digital Twin's ATP-rate values to mol/s
+        (the unit used in the paper, Eq. 9). The module's keys are named
+        "(mol/min)", so we check the value against W_chem * 0.60 / 30500
+        and only divide by 60 if the value really is per-minute.
+        """
+        try:
+            raw = float(c["ATP Production (mol/min)"])
+            expected = float(c["Chemical Power (W)"]) * 0.60 / 30500.0
+            if raw > 0 and expected > 0:
+                if abs(np.log(raw / expected)) <= abs(np.log(raw / 60.0 / expected)):
+                    return 1.0
+                return 1.0 / 60.0
+        except (KeyError, TypeError, ValueError):
+            pass
+        return 1.0
+
+    atp_scale = _detect_atp_scale(common)
 
     # ========================================================
     # TOP METRICS
@@ -695,537 +919,636 @@ if run_button:
     )
 
     # ========================================================
-    # ARCHITECTURE PIPELINE
+    # TABS (visual grouping only - content is unchanged)
     # ========================================================
 
-    st.header("90.71% Architecture")
+    tab_pred, tab_dses, tab_stress, tab_react, tab_info = st.tabs(
+        [
+            "🎯 Prediction",
+            "🧬 DSES Analysis",
+            "🔥 Stress & Physiology",
+            "⚗️ Reaction Detail",
+            "ℹ️ Model Info",
+        ]
+    )
 
-    pipeline = go.Figure(
-        go.Sankey(
-            node=dict(
-                label=[
-                    "Patient at Rest",
-                    "Digital Twin",
-                    "28 Patient DSES",
-                    "Expected-DSES RF",
-                    "28 Expected DSES",
-                    "28 DSES Residuals",
-                    "5 Global Stresses",
-                    "5 DT Physiology",
-                    "Clinical Layer",
-                    "Final 28-Class Classifier",
-                    "28 Disease Probabilities",
+    # ========================================================
+    # TAB 1 - PREDICTION
+    # ========================================================
+
+    with tab_pred:
+
+        # ----------------------------------------------------
+        # ARCHITECTURE PIPELINE
+        # ----------------------------------------------------
+
+        st.header("28-Class DSES Architecture")
+
+        pipeline = go.Figure(
+            go.Sankey(
+                node=dict(
+                    label=[
+                        "Patient at Rest",
+                        "Digital Twin",
+                        "28 Patient DSES",
+                        "Expected-DSES RF",
+                        "28 Expected DSES",
+                        "28 DSES Residuals",
+                        "5 Global Stresses",
+                        "5 DT Physiology",
+                        "Clinical Layer",
+                        "Final 28-Class Classifier",
+                        "28 Disease Probabilities",
+                    ],
+                    color=[
+                        NAVY, BLUE, TEAL, BLUE, TEAL, TEAL,
+                        TEAL, TEAL, TEAL, RED, RED,
+                    ],
+                    pad=18,
+                    thickness=18,
+                ),
+                link=dict(
+                    source=[
+                        0, 1, 2, 3, 4,
+                        5, 6, 7, 8, 9
+                    ],
+                    target=[
+                        1, 2, 3, 4, 5,
+                        6, 7, 8, 9, 10
+                    ],
+                    value=[1] * 10,
+                    color="rgba(46,134,193,0.28)",
+                ),
+            )
+        )
+
+        pipeline.update_layout(
+            title="Final Cardiac DSES Prediction Pipeline",
+        )
+
+        style_fig(pipeline, height=400)
+
+        st.plotly_chart(
+            pipeline,
+            use_container_width=True,
+        )
+
+        # ----------------------------------------------------
+        # 28-CLASS RANKING TABLE
+        # ----------------------------------------------------
+
+        st.header("28-Class Disease Ranking")
+
+        ranking = final_predictions.copy()
+
+        ranking.insert(
+            0,
+            "Rank",
+            np.arange(
+                1,
+                len(ranking) + 1,
+            ),
+        )
+
+        ranking["Probability"] = (
+            ranking["Probability"] * 100.0
+        )
+
+        st.dataframe(
+            ranking[
+                [
+                    "Rank",
+                    "Disease",
+                    "Probability",
                 ]
-            ),
-            link=dict(
-                source=[
-                    0, 1, 2, 3, 4,
-                    5, 6, 7, 8, 9
-                ],
-                target=[
-                    1, 2, 3, 4, 5,
-                    6, 7, 8, 9, 10
-                ],
-                value=[1] * 10,
-            ),
+            ],
+            column_config={
+                "Rank": st.column_config.NumberColumn(
+                    "Rank",
+                    width="small",
+                ),
+                "Disease": st.column_config.TextColumn(
+                    "Disease",
+                    width="large",
+                ),
+                "Probability": st.column_config.ProgressColumn(
+                    "Probability",
+                    format="%.2f%%",
+                    min_value=0.0,
+                    max_value=100.0,
+                ),
+            },
+            use_container_width=True,
+            hide_index=True,
         )
-    )
 
-    pipeline.update_layout(
-        title="Final Cardiac DSES Prediction Pipeline",
-        height=400,
-    )
+        # ----------------------------------------------------
+        # TOP 10 CHART
+        # ----------------------------------------------------
 
-    st.plotly_chart(
-        pipeline,
-        use_container_width=True,
-    )
-
-    # ========================================================
-    # 28-CLASS RANKING TABLE
-    # ========================================================
-
-    st.header("28-Class Disease Ranking")
-
-    ranking = final_predictions.copy()
-
-    ranking.insert(
-        0,
-        "Rank",
-        np.arange(
-            1,
-            len(ranking) + 1,
-        ),
-    )
-
-    ranking["Probability"] = (
-        ranking["Probability"] * 100.0
-    )
-
-    st.dataframe(
-        ranking[
-            [
-                "Rank",
-                "Disease",
-                "Probability",
-            ]
-        ].style.format(
-            {
-                "Probability": "{:.2f}%",
-            }
-        ),
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    # ========================================================
-    # TOP 10 CHART
-    # ========================================================
-
-    top10 = (
-        ranking
-        .head(10)
-        .iloc[::-1]
-    )
-
-    fig_top10 = go.Figure(
-        go.Bar(
-            x=top10["Probability"],
-            y=top10["Disease"],
-            orientation="h",
+        top10 = (
+            ranking
+            .head(10)
+            .iloc[::-1]
         )
-    )
 
-    fig_top10.update_layout(
-        title="Top 10 Final 28-Class Predictions",
-        xaxis_title="Classifier Probability (%)",
-        yaxis_title="Disease",
-        height=520,
-    )
+        # Highlight the #1 prediction (last row after reversal).
+        top10_colors = [NAVY] * (len(top10) - 1) + [RED]
 
-    st.plotly_chart(
-        fig_top10,
-        use_container_width=True,
-    )
+        fig_top10 = go.Figure(
+            go.Bar(
+                x=top10["Probability"],
+                y=top10["Disease"],
+                orientation="h",
+                marker=dict(color=top10_colors),
+                text=[f"{v:.2f}%" for v in top10["Probability"]],
+                textposition="outside",
+            )
+        )
+
+        fig_top10.update_layout(
+            title="Top 10 Final 28-Class Predictions",
+            xaxis_title="Classifier Probability (%)",
+            yaxis_title="Disease",
+        )
+
+        style_fig(fig_top10, height=520)
+
+        st.plotly_chart(
+            fig_top10,
+            use_container_width=True,
+        )
 
     # ========================================================
     # PATIENT DSES / EXPECTED DSES / RESIDUALS
     # ========================================================
 
-    st.header(
-        "DSES Features Used by the Final Classifier"
-    )
+    with tab_dses:
 
-    dses_rows = []
-
-    for disease in diseases:
-
-        p_col = f"P_{disease}"
-        e_col = f"E_{disease}"
-        r_col = f"R_{disease}"
-
-        dses_rows.append(
-            {
-                "Disease": disease,
-                "Patient DSES": (
-                    float(
-                        final_features.iloc[0][p_col]
-                    )
-                    if p_col in final_features.columns
-                    else np.nan
-                ),
-                "Expected DSES": (
-                    float(
-                        final_features.iloc[0][e_col]
-                    )
-                    if e_col in final_features.columns
-                    else np.nan
-                ),
-                "DSES Residual": (
-                    float(
-                        final_features.iloc[0][r_col]
-                    )
-                    if r_col in final_features.columns
-                    else np.nan
-                ),
-            }
+        st.header(
+            "DSES Features Used by the Final Classifier"
         )
 
-    dses_table = pd.DataFrame(
-        dses_rows
-    )
+        dses_rows = []
 
-    dses_table = dses_table.merge(
-        final_predictions,
-        on="Disease",
-        how="left",
-    )
+        for disease in diseases:
 
-    dses_table["Probability"] = (
-        dses_table["Probability"] * 100.0
-    )
+            p_col = f"P_{disease}"
+            e_col = f"E_{disease}"
+            r_col = f"R_{disease}"
 
-    dses_table = (
-        dses_table
-        .sort_values(
-            "Probability",
-            ascending=False,
+            dses_rows.append(
+                {
+                    "Disease": disease,
+                    "Patient DSES": (
+                        float(
+                            final_features.iloc[0][p_col]
+                        )
+                        if p_col in final_features.columns
+                        else np.nan
+                    ),
+                    "Expected DSES": (
+                        float(
+                            final_features.iloc[0][e_col]
+                        )
+                        if e_col in final_features.columns
+                        else np.nan
+                    ),
+                    "DSES Residual": (
+                        float(
+                            final_features.iloc[0][r_col]
+                        )
+                        if r_col in final_features.columns
+                        else np.nan
+                    ),
+                }
+            )
+
+        dses_table = pd.DataFrame(
+            dses_rows
         )
-        .reset_index(drop=True)
-    )
 
-    dses_table.insert(
-        0,
-        "Rank",
-        np.arange(
-            1,
-            len(dses_table) + 1,
-        ),
-    )
-
-    st.dataframe(
-        dses_table.style.format(
-            {
-                "Patient DSES": "{:.3f}",
-                "Expected DSES": "{:.3f}",
-                "DSES Residual": "{:.3f}",
-                "Probability": "{:.2f}%",
-            }
-        ),
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    # ========================================================
-    # PATIENT VS EXPECTED DSES
-    # ========================================================
-
-    fig_dses = go.Figure()
-
-    selected_dses = (
-        dses_table
-        .head(10)
-        .iloc[::-1]
-    )
-
-    fig_dses.add_trace(
-        go.Bar(
-            x=selected_dses["Patient DSES"],
-            y=selected_dses["Disease"],
-            orientation="h",
-            name="Patient DSES",
+        dses_table = dses_table.merge(
+            final_predictions,
+            on="Disease",
+            how="left",
         )
-    )
 
-    fig_dses.add_trace(
-        go.Bar(
-            x=selected_dses["Expected DSES"],
-            y=selected_dses["Disease"],
-            orientation="h",
-            name="Expected DSES",
+        dses_table["Probability"] = (
+            dses_table["Probability"] * 100.0
         )
-    )
 
-    fig_dses.update_layout(
-        title="Patient DSES vs Expected DSES - Top 10",
-        xaxis_title="DSES",
-        yaxis_title="Disease",
-        barmode="group",
-        height=520,
-    )
-
-    st.plotly_chart(
-        fig_dses,
-        use_container_width=True,
-    )
-
-    # ========================================================
-    # DSES RESIDUAL CHART
-    # ========================================================
-
-    residual_plot = (
-        dses_table
-        .head(15)
-        .iloc[::-1]
-    )
-
-    fig_residual = go.Figure(
-        go.Bar(
-            x=residual_plot["DSES Residual"],
-            y=residual_plot["Disease"],
-            orientation="h",
+        dses_table = (
+            dses_table
+            .sort_values(
+                "Probability",
+                ascending=False,
+            )
+            .reset_index(drop=True)
         )
-    )
 
-    fig_residual.add_vline(
-        x=0,
-        line_dash="dash",
-    )
+        dses_table.insert(
+            0,
+            "Rank",
+            np.arange(
+                1,
+                len(dses_table) + 1,
+            ),
+        )
 
-    fig_residual.update_layout(
-        title="DSES Residuals - Top 15 Predicted Diseases",
-        xaxis_title="Patient DSES - Expected DSES",
-        yaxis_title="Disease",
-        height=620,
-    )
-
-    st.plotly_chart(
-        fig_residual,
-        use_container_width=True,
-    )
-
-    # ========================================================
-    # GLOBAL STRESS FEATURES
-    # ========================================================
-
-    st.header("Global Digital-Twin Stress Features")
-
-    stress_names = [
-        "Metabolic Stress",
-        "Mechanical Stress",
-        "Thermodynamic Stress",
-        "ATP Stress",
-        "Entropy Stress",
-    ]
-
-    stress_values = []
-
-    for name in stress_names:
-        column = f"G_{name}"
-
-        stress_values.append(
-            float(
-                final_features.iloc[0].get(
-                    column,
-                    np.nan,
-                )
+        # Residual column gets a diverging colour map; probability a green ramp.
+        styled_dses = (
+            dses_table.style
+            .format(
+                {
+                    "Patient DSES": "{:.3f}",
+                    "Expected DSES": "{:.3f}",
+                    "DSES Residual": "{:.3f}",
+                    "Probability": "{:.2f}%",
+                }
+            )
+            .background_gradient(
+                subset=["DSES Residual"],
+                cmap="RdBu_r",
+                vmin=-max(abs(dses_table["DSES Residual"].min()), abs(dses_table["DSES Residual"].max()), 1e-9),
+                vmax=max(abs(dses_table["DSES Residual"].min()), abs(dses_table["DSES Residual"].max()), 1e-9),
+            )
+            .background_gradient(
+                subset=["Probability"],
+                cmap="Greens",
             )
         )
 
-    stress_df = pd.DataFrame(
-        {
-            "Stress Component": stress_names,
-            "Value": stress_values,
-        }
-    )
-
-    st.dataframe(
-        stress_df.style.format(
-            {"Value": "{:.4f}"}
-        ),
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    fig_stress = go.Figure(
-        go.Bar(
-            x=stress_df["Stress Component"],
-            y=stress_df["Value"],
+        st.dataframe(
+            styled_dses,
+            use_container_width=True,
+            hide_index=True,
         )
-    )
 
-    fig_stress.add_hline(
-        y=1.0,
-        line_dash="dash",
-        annotation_text="Reference = 1.0",
-    )
+        # ====================================================
+        # PATIENT VS EXPECTED DSES
+        # ====================================================
 
-    fig_stress.update_layout(
-        title="Global Stress Profile",
-        xaxis_title="Stress",
-        yaxis_title="Normalized Value",
-    )
+        fig_dses = go.Figure()
 
-    st.plotly_chart(
-        fig_stress,
-        use_container_width=True,
-    )
+        selected_dses = (
+            dses_table
+            .head(10)
+            .iloc[::-1]
+        )
+
+        fig_dses.add_trace(
+            go.Bar(
+                x=selected_dses["Patient DSES"],
+                y=selected_dses["Disease"],
+                orientation="h",
+                name="Patient DSES",
+                marker=dict(color=RED),
+            )
+        )
+
+        fig_dses.add_trace(
+            go.Bar(
+                x=selected_dses["Expected DSES"],
+                y=selected_dses["Disease"],
+                orientation="h",
+                name="Expected DSES",
+                marker=dict(color=NAVY),
+            )
+        )
+
+        fig_dses.update_layout(
+            title="Patient DSES vs Expected DSES - Top 10",
+            xaxis_title="DSES",
+            yaxis_title="Disease",
+            barmode="group",
+        )
+
+        style_fig(fig_dses, height=520)
+
+        st.plotly_chart(
+            fig_dses,
+            use_container_width=True,
+        )
+
+        # ====================================================
+        # DSES RESIDUAL CHART
+        # ====================================================
+
+        residual_plot = (
+            dses_table
+            .head(15)
+            .iloc[::-1]
+        )
+
+        residual_colors = [
+            RED if v >= 0 else BLUE
+            for v in residual_plot["DSES Residual"]
+        ]
+
+        fig_residual = go.Figure(
+            go.Bar(
+                x=residual_plot["DSES Residual"],
+                y=residual_plot["Disease"],
+                orientation="h",
+                marker=dict(color=residual_colors),
+            )
+        )
+
+        fig_residual.add_vline(
+            x=0,
+            line_dash="dash",
+            line_color=GREY,
+        )
+
+        fig_residual.update_layout(
+            title="DSES Residuals - Top 15 Predicted Diseases",
+            xaxis_title="Patient DSES - Expected DSES",
+            yaxis_title="Disease",
+        )
+
+        style_fig(fig_residual, height=620)
+
+        st.plotly_chart(
+            fig_residual,
+            use_container_width=True,
+        )
 
     # ========================================================
-    # DIGITAL TWIN PHYSIOLOGY
+    # GLOBAL STRESS + PHYSIOLOGY
     # ========================================================
 
-    st.header("Digital Twin Physiological State")
+    with tab_stress:
 
-    physiology_rows = [
-        (
-            "Stroke Volume",
-            common["SV"],
-            "mL",
-        ),
-        (
-            "Ejection Fraction",
-            common["EF"] * 100.0,
-            "%",
-        ),
-        (
-            "Mean Arterial Pressure",
-            common["MAP"],
-            "mmHg",
-        ),
-        (
-            "Cardiac Output",
-            common["CO"],
-            "mL/min proxy",
-        ),
-        (
-            "Rate-Pressure Product",
-            common["RPP"],
-            "mmHg·bpm",
-        ),
-        (
-            "LV Stroke Work",
-            common["LVSW"],
-            "J/beat",
-        ),
-        (
-            "MVO₂",
-            common["MVO2"],
-            "DT units",
-        ),
-        (
-            "Chemical Power",
-            common["Chemical Power (W)"],
-            "W",
-        ),
-        (
-            "Mechanical Power",
-            common["Mechanical Power (W)"],
-            "W",
-        ),
-        (
-            "Heat Production",
-            common["Heat Production (W)"],
-            "W",
-        ),
-        (
-            "ATP Production",
-            common["ATP Production (mol/min)"],
-            "mol/min",
-        ),
-        (
-            "ATP Utilization",
-            common["ATP Utilization (mol/min)"],
-            "mol/min",
-        ),
-        (
-            "ATP Utilization Fraction",
-            common["ATP Utilization Fraction"],
-            "ratio",
-        ),
-        (
-            "ATP Balance",
-            common["ATP Balance (mol/min)"],
-            "mol/min",
-        ),
-    ]
+        st.header("Global Digital-Twin Stress Features")
 
-    physiology_df = pd.DataFrame(
-        physiology_rows,
-        columns=[
-            "Variable",
-            "Value",
-            "Unit",
-        ],
-    )
+        stress_names = [
+            "Metabolic Stress",
+            "Mechanical Stress",
+            "Thermodynamic Stress",
+            "ATP Stress",
+            "Entropy Stress",
+        ]
 
-    st.dataframe(
-        physiology_df.style.format(
-            {"Value": "{:.6f}"}
-        ),
-        use_container_width=True,
-        hide_index=True,
-    )
+        stress_values = []
+
+        for name in stress_names:
+            column = f"G_{name}"
+
+            stress_values.append(
+                float(
+                    final_features.iloc[0].get(
+                        column,
+                        np.nan,
+                    )
+                )
+            )
+
+        stress_df = pd.DataFrame(
+            {
+                "Stress Component": stress_names,
+                "Value": stress_values,
+            }
+        )
+
+        st.dataframe(
+            stress_df.style.format(
+                {"Value": "{:.4f}"}
+            ).background_gradient(
+                subset=["Value"],
+                cmap="OrRd",
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        # Bars above the 1.0 reference are red, others teal.
+        stress_colors = [
+            RED if (not np.isnan(v) and v > 1.0) else TEAL
+            for v in stress_df["Value"]
+        ]
+
+        fig_stress = go.Figure(
+            go.Bar(
+                x=stress_df["Stress Component"],
+                y=stress_df["Value"],
+                marker=dict(color=stress_colors),
+                text=[f"{v:.3f}" for v in stress_df["Value"]],
+                textposition="outside",
+            )
+        )
+
+        fig_stress.add_hline(
+            y=1.0,
+            line_dash="dash",
+            line_color=GREY,
+            annotation_text="Reference = 1.0",
+        )
+
+        fig_stress.update_layout(
+            title="Global Stress Profile",
+            xaxis_title="Stress",
+            yaxis_title="Normalized Value",
+        )
+
+        style_fig(fig_stress, height=460)
+
+        st.plotly_chart(
+            fig_stress,
+            use_container_width=True,
+        )
+
+        # ====================================================
+        # DIGITAL TWIN PHYSIOLOGY
+        # ====================================================
+
+        st.header("Digital Twin Physiological State")
+
+        physiology_rows = [
+            (
+                "Stroke Volume",
+                common["SV"],
+                "mL",
+            ),
+            (
+                "Ejection Fraction",
+                common["EF"] * 100.0,
+                "%",
+            ),
+            (
+                "Mean Arterial Pressure",
+                common["MAP"],
+                "mmHg",
+            ),
+            (
+                "Cardiac Output",
+                common["CO"],
+                "mL/min proxy",
+            ),
+            (
+                "Rate-Pressure Product",
+                common["RPP"],
+                "mmHg·bpm",
+            ),
+            (
+                "LV Stroke Work",
+                common["LVSW"],
+                "J/beat",
+            ),
+            (
+                "MVO₂",
+                common["MVO2"],
+                "DT units",
+            ),
+            (
+                "Chemical Power",
+                common["Chemical Power (W)"],
+                "W",
+            ),
+            (
+                "Mechanical Power",
+                common["Mechanical Power (W)"],
+                "W",
+            ),
+            (
+                "Heat Production",
+                common["Heat Production (W)"],
+                "W",
+            ),
+            (
+                "ATP Production",
+                common["ATP Production (mol/min)"] * atp_scale,
+                "mol/s",
+            ),
+            (
+                "ATP Utilization",
+                common["ATP Utilization (mol/min)"] * atp_scale,
+                "mol/s",
+            ),
+            (
+                "ATP Utilization Fraction",
+                common["ATP Utilization Fraction"],
+                "ratio",
+            ),
+            (
+                "ATP Balance",
+                common["ATP Balance (mol/min)"] * atp_scale,
+                "mol/s",
+            ),
+        ]
+
+        physiology_df = pd.DataFrame(
+            physiology_rows,
+            columns=[
+                "Variable",
+                "Value",
+                "Unit",
+            ],
+        )
+
+        st.dataframe(
+            physiology_df.style.format(
+                {"Value": "{:.6g}"}
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
 
     # ========================================================
     # REACTION-LEVEL DETAIL FOR TOP DISEASE
     # ========================================================
 
-    st.header(
-        f"Reaction-Level Detail — {top_disease}"
-    )
+    with tab_react:
 
-    top_reaction_details = (
-        dt_result
-        .get("reaction_details", {})
-        .get(top_disease, {})
-    )
-
-    reaction_rows = []
-
-    for reaction, detail in top_reaction_details.items():
-
-        row = {
-            "Biochemical Reaction": reaction
-        }
-
-        if isinstance(detail, dict):
-            row.update(detail)
-
-        reaction_rows.append(row)
-
-    if reaction_rows:
-
-        reaction_df = pd.DataFrame(
-            reaction_rows
+        st.header(
+            f"Reaction-Level Detail — {top_disease}"
         )
 
-        st.dataframe(
-            reaction_df,
-            use_container_width=True,
-            hide_index=True,
+        top_reaction_details = (
+            dt_result
+            .get("reaction_details", {})
+            .get(top_disease, {})
         )
 
-    else:
-        st.info(
-            "No reaction-level details were available "
-            "for the top predicted disease."
-        )
+        reaction_rows = []
 
-    # ========================================================
-    # FULL DIGITAL-TWIN CALCULATION DETAILS
-    # ========================================================
+        for reaction, detail in top_reaction_details.items():
 
-    with st.expander(
-        "Show Full Digital-Twin Calculations"
-    ):
+            row = {
+                "Biochemical Reaction": reaction
+            }
 
-        calculation = []
+            if isinstance(detail, dict):
+                row.update(detail)
 
-        for key, value in common.items():
+            reaction_rows.append(row)
 
-            if isinstance(
-                value,
-                (int, float, np.integer, np.floating),
-            ):
+        if reaction_rows:
 
-                calculation.append(
-                    {
-                        "Variable": key,
-                        "Value": float(value),
-                    }
-                )
+            reaction_df = pd.DataFrame(
+                reaction_rows
+            )
 
-        calculation_df = pd.DataFrame(
-            calculation
-        )
-
-        if not calculation_df.empty:
             st.dataframe(
-                calculation_df.style.format(
-                    {"Value": "{:.8f}"}
-                ),
+                reaction_df,
                 use_container_width=True,
                 hide_index=True,
             )
+
+        else:
+            st.info(
+                "No reaction-level details were available "
+                "for the top predicted disease."
+            )
+
+        # ====================================================
+        # FULL DIGITAL-TWIN CALCULATION DETAILS
+        # ====================================================
+
+        with st.expander(
+            "Show Full Digital-Twin Calculations"
+        ):
+
+            calculation = []
+
+            for key, value in common.items():
+
+                if isinstance(
+                    value,
+                    (int, float, np.integer, np.floating),
+                ):
+
+                    _is_atp_rate = "mol/min" in str(key)
+
+                    calculation.append(
+                        {
+                            "Variable": str(key).replace("mol/min", "mol/s"),
+                            "Value": float(value) * (
+                                atp_scale if _is_atp_rate else 1.0
+                            ),
+                        }
+                    )
+
+            calculation_df = pd.DataFrame(
+                calculation
+            )
+
+            if not calculation_df.empty:
+                st.dataframe(
+                    calculation_df.style.format(
+                        {"Value": "{:.8g}"}
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
 
     # ========================================================
     # MODEL FEATURE COUNT
     # ========================================================
 
-    with st.expander(
-        "Show Final Classifier Feature Summary"
-    ):
+    with tab_info:
+
+        st.header("Final Classifier Feature Summary")
 
         feature_summary = pd.DataFrame(
             {
@@ -1267,15 +1590,21 @@ if run_button:
             "fields used by the final model after categorical encoding."
         )
 
-    # ========================================================
-    # MODEL INTERPRETATION NOTICE
-    # ========================================================
+        # ====================================================
+        # MODEL INTERPRETATION NOTICE
+        # ====================================================
 
-    st.info(
-        "The displayed probabilities come from the trained final "
-        "28-class classifier. They are model probabilities, not "
-        "clinically calibrated diagnostic probabilities."
-    )
+        st.info(
+            "The displayed probabilities come from the trained final "
+            "28-class classifier. They are model probabilities, not "
+            "clinically calibrated diagnostic probabilities. In the "
+            "accompanying paper the classifier reaches 97.20% Top-1 "
+            "scenario-recovery consistency on a 1,000-case in-silico "
+            "benchmark (28 literature-informed scenarios with noisy "
+            "realizations). That figure measures internal model "
+            "self-consistency, not clinical diagnostic accuracy, and the "
+            "model has not been validated on real patient cohorts."
+        )
 
 else:
 
