@@ -472,6 +472,36 @@ def style_fig(fig, height=None):
     return fig
 
 
+def _hex_to_rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _blend(stops, t):
+    """Interpolate an (r, g, b) colour along evenly spaced hex stops."""
+    t = min(max(float(t), 0.0), 1.0)
+    n = len(stops) - 1
+    pos = t * n
+    i = min(int(pos), n - 1)
+    f = pos - i
+    a = _hex_to_rgb(stops[i])
+    b = _hex_to_rgb(stops[i + 1])
+    return tuple(round(a[k] + (b[k] - a[k]) * f) for k in range(3))
+
+
+def gradient_css(values, stops, vmin, vmax):
+    """Per-cell CSS background gradient (replaces matplotlib-based Styler.background_gradient)."""
+    out = []
+    for v in values:
+        if pd.isna(v) or vmax == vmin:
+            out.append("")
+            continue
+        r, g, b = _blend(stops, (v - vmin) / (vmax - vmin))
+        text = "#1F2A44" if (0.299 * r + 0.587 * g + 0.114 * b) > 140 else "#FFFFFF"
+        out.append(f"background-color: rgb({r},{g},{b}); color: {text}")
+    return out
+
+
 st.markdown(
     """
     <div class="hero">
@@ -1157,6 +1187,13 @@ if "result" in st.session_state:
         )
 
         # Residual column gets a diverging colour map; probability a green ramp.
+        _res_vals = dses_table["DSES Residual"].dropna()
+        _res_lim = max(
+            float(_res_vals.abs().max()) if len(_res_vals) else 0.0,
+            1e-9,
+        )
+        _prob_max = max(float(dses_table["Probability"].max()), 1e-9)
+
         styled_dses = (
             dses_table.style
             .format(
@@ -1167,15 +1204,19 @@ if "result" in st.session_state:
                     "Probability": "{:.2f}%",
                 }
             )
-            .background_gradient(
+            .apply(
+                lambda s: gradient_css(
+                    s, ["#2E86C1", "#FFFFFF", "#C0392B"],
+                    -_res_lim, _res_lim,
+                ),
                 subset=["DSES Residual"],
-                cmap="RdBu_r",
-                vmin=-max(abs(dses_table["DSES Residual"].min()), abs(dses_table["DSES Residual"].max()), 1e-9),
-                vmax=max(abs(dses_table["DSES Residual"].min()), abs(dses_table["DSES Residual"].max()), 1e-9),
             )
-            .background_gradient(
+            .apply(
+                lambda s: gradient_css(
+                    s, ["#FFFFFF", "#A9DFBF", "#16A085"],
+                    0.0, _prob_max,
+                ),
                 subset=["Probability"],
-                cmap="Greens",
             )
         )
 
@@ -1314,9 +1355,12 @@ if "result" in st.session_state:
         st.dataframe(
             stress_df.style.format(
                 {"Value": "{:.4f}"}
-            ).background_gradient(
+            ).apply(
+                lambda s: gradient_css(
+                    s, ["#FFF5EB", "#FDBB84", "#C0392B"],
+                    float(s.min()), float(s.max()),
+                ),
                 subset=["Value"],
-                cmap="OrRd",
             ),
             use_container_width=True,
             hide_index=True,
