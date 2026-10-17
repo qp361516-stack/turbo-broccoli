@@ -381,14 +381,23 @@ footer {visibility: hidden;}
 [data-testid="stSidebar"] hr {
     border-color: rgba(255,255,255,0.18);
 }
-/* inputs: explicit light field + dark text so they read in any theme */
+/* inputs: explicit light field + dark text so they read in any theme.
+   The background must be set on every nested element Streamlit paints. */
 [data-testid="stSidebar"] [data-baseweb="input"],
-[data-testid="stSidebar"] [data-baseweb="select"] > div {
+[data-testid="stSidebar"] [data-baseweb="input"] > div,
+[data-testid="stSidebar"] [data-baseweb="base-input"],
+[data-testid="stSidebar"] [data-baseweb="select"],
+[data-testid="stSidebar"] [data-baseweb="select"] div,
+[data-testid="stSidebar"] input {
     background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
 }
 [data-testid="stSidebar"] input,
 [data-testid="stSidebar"] [data-baseweb="select"] * {
     color: #1F2A44 !important;
+}
+[data-testid="stSidebar"] input {
+    -webkit-text-fill-color: #1F2A44 !important;
 }
 [data-testid="stSidebar"] [data-testid="stNumberInput"] button {
     background: #E9ECF3 !important;
