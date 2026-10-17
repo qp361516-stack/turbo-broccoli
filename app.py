@@ -307,13 +307,50 @@ try:
 except Exception:
     pass
 
+# ---------- Theme detection ----------
+def _detect_dark_theme():
+    """True when Streamlit is rendering in dark mode."""
+    try:
+        return str(st.context.theme.type).lower() == "dark"
+    except Exception:
+        pass
+    try:
+        return str(st.get_option("theme.base")).lower() == "dark"
+    except Exception:
+        return False
+
+
+IS_DARK = _detect_dark_theme()
+
 # ---------- Colour palette ----------
+# Every text colour below is defined together with the background it sits
+# on, so text stays readable in both light and dark mode.
 NAVY = "#1F2A44"
-RED = "#C0392B"
-TEAL = "#16A085"
+RED = "#B03A2E"
+TEAL = "#148F77"
 BLUE = "#2E86C1"
 GREY = "#6B7280"
-LIGHT = "#F4F6FA"
+
+if IS_DARK:
+    TEXT = "#E8ECF4"
+    MUTED = "#9AA6BD"
+    CARD_BG = "#1B2233"
+    CARD_BORDER = "#2E3850"
+    GRID = "#2E3850"
+    BAR = "#6C8EBF"
+    TAB_BG = "#1B2233"
+    TAB_SEL = "#3A4F7A"
+    HERO_BG = "#141B2D"
+else:
+    TEXT = "#1F2A44"
+    MUTED = "#6B7280"
+    CARD_BG = "#FFFFFF"
+    CARD_BORDER = "#DDE2EC"
+    GRID = "#E9ECF3"
+    BAR = NAVY
+    TAB_BG = "#F1F3F8"
+    TAB_SEL = NAVY
+    HERO_BG = NAVY
 
 CUSTOM_CSS = """
 <style>
@@ -331,7 +368,7 @@ footer {visibility: hidden;}
 
 /* ---------- sidebar ---------- */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1F2A44 0%, #2B3A5E 100%);
+    background: __HERO_BG__;
 }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
@@ -339,92 +376,98 @@ footer {visibility: hidden;}
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span {
-    color: #F2F4F8 !important;
+    color: #EEF1F7 !important;
+}
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.18);
+}
+/* inputs: explicit light field + dark text so they read in any theme */
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] [data-baseweb="select"] > div {
+    background: #FFFFFF !important;
 }
 [data-testid="stSidebar"] input,
 [data-testid="stSidebar"] [data-baseweb="select"] * {
     color: #1F2A44 !important;
 }
-[data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.18);
+[data-testid="stSidebar"] [data-testid="stNumberInput"] button {
+    background: #E9ECF3 !important;
+    color: #1F2A44 !important;
 }
 
-/* ---------- hero banner ---------- */
+/* ---------- header banner ---------- */
 .hero {
-    background: linear-gradient(120deg, #1F2A44 0%, #C0392B 130%);
-    border-radius: 16px;
-    padding: 26px 34px;
+    background: __HERO_BG__;
+    border-left: 5px solid __RED__;
+    border-radius: 8px;
+    padding: 20px 28px;
     margin-bottom: 18px;
-    box-shadow: 0 6px 22px rgba(31,42,68,0.25);
 }
 .hero h1 {
     color: #FFFFFF !important;
     margin: 0;
-    font-size: 2.0rem;
+    padding: 0;
+    font-size: 1.75rem;
     font-weight: 700;
-    letter-spacing: 0.2px;
 }
 .hero p {
-    color: #DCE3F0 !important;
+    color: #C9D2E3 !important;
     margin: 6px 0 0 0;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
 }
-.pill {
-    display: inline-block;
-    background: rgba(255,255,255,0.16);
-    color: #FFFFFF;
-    border-radius: 999px;
-    padding: 3px 12px;
-    margin: 10px 8px 0 0;
-    font-size: 0.78rem;
-    font-weight: 600;
+.hero .hero-meta {
+    color: #9FB0CC !important;
+    font-size: 0.82rem;
+    margin-top: 8px;
 }
 
-/* ---------- metric cards ---------- */
+/* ---------- metric cards (background and text set together) ---------- */
 [data-testid="stMetric"] {
-    background: #FFFFFF;
-    border: 1px solid #E6E9F0;
-    border-left: 5px solid #C0392B;
-    border-radius: 12px;
+    background: __CARD_BG__;
+    border: 1px solid __CARD_BORDER__;
+    border-left: 4px solid __RED__;
+    border-radius: 8px;
     padding: 14px 18px;
-    box-shadow: 0 2px 10px rgba(31,42,68,0.07);
 }
 [data-testid="stMetricLabel"] p {
-    color: #6B7280 !important;
+    color: __MUTED__ !important;
     font-weight: 600;
-    font-size: 0.82rem;
+    font-size: 0.80rem;
     text-transform: uppercase;
     letter-spacing: 0.4px;
 }
-[data-testid="stMetricValue"] {
-    color: #1F2A44 !important;
+[data-testid="stMetricValue"],
+[data-testid="stMetricValue"] div {
+    color: __TEXT__ !important;
     font-weight: 700;
-    font-size: 1.45rem;
+    font-size: 1.35rem;
     white-space: normal;
 }
 
-/* ---------- section headers ---------- */
+/* ---------- section headers (colour inherited from theme) ---------- */
 h2 {
-    color: #1F2A44;
     font-weight: 700;
-    border-bottom: 3px solid #C0392B;
+    border-bottom: 2px solid __CARD_BORDER__;
     padding-bottom: 6px;
     margin-top: 1.2rem;
 }
 
 /* ---------- tabs ---------- */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 6px;
-    border-bottom: 2px solid #E6E9F0;
+    gap: 4px;
+    border-bottom: 1px solid __CARD_BORDER__;
 }
 .stTabs [data-baseweb="tab"] {
-    background: #F4F6FA;
-    border-radius: 10px 10px 0 0;
-    padding: 10px 20px;
+    background: __TAB_BG__;
+    border-radius: 6px 6px 0 0;
+    padding: 9px 18px;
+}
+.stTabs [data-baseweb="tab"] p {
+    color: __TEXT__ !important;
     font-weight: 600;
 }
 .stTabs [aria-selected="true"] {
-    background: #1F2A44 !important;
+    background: __TAB_SEL__ !important;
 }
 .stTabs [aria-selected="true"] p {
     color: #FFFFFF !important;
@@ -432,41 +475,67 @@ h2 {
 
 /* ---------- buttons / tables ---------- */
 .stButton > button {
-    border-radius: 10px;
+    border-radius: 6px;
     font-weight: 700;
-    letter-spacing: 0.4px;
-    box-shadow: 0 3px 10px rgba(192,57,43,0.35);
+    letter-spacing: 0.3px;
 }
 [data-testid="stDataFrame"] {
-    border: 1px solid #E6E9F0;
-    border-radius: 12px;
+    border: 1px solid __CARD_BORDER__;
+    border-radius: 8px;
     overflow: hidden;
 }
 </style>
 """
 
+for _token, _value in {
+    "__HERO_BG__": HERO_BG,
+    "__RED__": RED,
+    "__CARD_BG__": CARD_BG,
+    "__CARD_BORDER__": CARD_BORDER,
+    "__MUTED__": MUTED,
+    "__TEXT__": TEXT,
+    "__TAB_BG__": TAB_BG,
+    "__TAB_SEL__": TAB_SEL,
+}.items():
+    CUSTOM_CSS = CUSTOM_CSS.replace(_token, _value)
+
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
 def style_fig(fig, height=None):
-    """Apply the shared chart look to a Plotly figure."""
+    """Apply the shared chart look. Background and text colours are paired."""
     fig.update_layout(
-        template="plotly_white",
-        font=dict(family="Inter, Segoe UI, sans-serif", size=13, color=NAVY),
-        title=dict(font=dict(size=18, color=NAVY)),
+        template="plotly_dark" if IS_DARK else "plotly_white",
+        font=dict(family="Inter, Segoe UI, sans-serif", size=13, color=TEXT),
+        title=dict(font=dict(size=17, color=TEXT)),
         margin=dict(l=20, r=20, t=60, b=30),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        plot_bgcolor=CARD_BG,
+        paper_bgcolor=CARD_BG,
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
             x=1,
+            font=dict(color=TEXT),
         ),
     )
-    fig.update_xaxes(gridcolor="#E9ECF3", zeroline=False)
-    fig.update_yaxes(gridcolor="#E9ECF3", zeroline=False)
+    fig.update_xaxes(
+        gridcolor=GRID,
+        zeroline=False,
+        tickfont=dict(color=TEXT),
+        title_font=dict(color=TEXT),
+    )
+    fig.update_yaxes(
+        gridcolor=GRID,
+        zeroline=False,
+        tickfont=dict(color=TEXT),
+        title_font=dict(color=TEXT),
+    )
+    fig.update_traces(
+        textfont=dict(color=TEXT),
+        selector=dict(type="bar"),
+    )
     if height is not None:
         fig.update_layout(height=height)
     return fig
@@ -505,11 +574,11 @@ def gradient_css(values, stops, vmin, vmax):
 st.markdown(
     """
     <div class="hero">
-        <h1>🫀 Cardio-Thermodynamic Digital Twin</h1>
-        <p>Disease-Specific Entropy Signature (DSES) · 28-class prediction</p>
-        <span class="pill">Resting patient</span>
-        <span class="pill">Smoking fixed to NO</span>
-        <span class="pill">28 disease hypotheses</span>
+        <h1>Cardio-Thermodynamic Digital Twin</h1>
+        <p>Disease-Specific Entropy Signature (DSES) &middot; 28-class model</p>
+        <div class="hero-meta">
+            Resting patient &middot; Smoking fixed to NO &middot; Research prototype
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -954,11 +1023,11 @@ if "result" in st.session_state:
 
     tab_pred, tab_dses, tab_stress, tab_react, tab_info = st.tabs(
         [
-            "🎯 Prediction",
-            "🧬 DSES Analysis",
-            "🔥 Stress & Physiology",
-            "⚗️ Reaction Detail",
-            "ℹ️ Model Info",
+            "Prediction",
+            "DSES Analysis",
+            "Stress & Physiology",
+            "Reaction Detail",
+            "Model Info",
         ]
     )
 
@@ -991,7 +1060,7 @@ if "result" in st.session_state:
                         "28 Disease Probabilities",
                     ],
                     color=[
-                        NAVY, BLUE, TEAL, BLUE, TEAL, TEAL,
+                        BAR, BLUE, TEAL, BLUE, TEAL, TEAL,
                         TEAL, TEAL, TEAL, RED, RED,
                     ],
                     pad=18,
@@ -1083,7 +1152,7 @@ if "result" in st.session_state:
         )
 
         # Highlight the #1 prediction (last row after reversal).
-        top10_colors = [NAVY] * (len(top10) - 1) + [RED]
+        top10_colors = [BAR] * (len(top10) - 1) + [RED]
 
         fig_top10 = go.Figure(
             go.Bar(
@@ -1254,7 +1323,7 @@ if "result" in st.session_state:
                 y=selected_dses["Disease"],
                 orientation="h",
                 name="Expected DSES",
-                marker=dict(color=NAVY),
+                marker=dict(color=BAR),
             )
         )
 
