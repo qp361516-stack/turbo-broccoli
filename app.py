@@ -1,6 +1,6 @@
 # ============================================================
 # app.py
-# Cardiac DSES Digital Twin - FINAL 28-CLASS ARCHITECTURE
+# Cardio-Thermodynamic Digital Twin - FINAL 28-CLASS ARCHITECTURE
 # Reported benchmark: 97.20% Top-1 scenario-recovery consistency on an in-silico
 # benchmark; this is not clinical diagnostic accuracy.
 #
@@ -270,10 +270,10 @@ if not missing:
 
     except Exception as exc:
         st.set_page_config(
-            page_title="Cardiac DSES Digital Twin",
+            page_title="Cardio-Thermodynamic Digital Twin",
             layout="wide",
         )
-        st.title("Cardiac DSES Digital Twin")
+        st.title("Cardio-Thermodynamic Digital Twin")
         st.error(
             "The 28-class model runtime could not be loaded. "
             "Check the traceback and confirm that the Python modules and model artifacts "
@@ -283,10 +283,10 @@ if not missing:
         st.stop()
 else:
     st.set_page_config(
-        page_title="Cardiac DSES Digital Twin",
+        page_title="Cardio-Thermodynamic Digital Twin",
         layout="wide",
     )
-    st.title("Cardiac DSES Digital Twin")
+    st.title("Cardio-Thermodynamic Digital Twin")
 
     st.error(
         "Required 28-class model files are missing. The app has stopped before "
@@ -312,7 +312,7 @@ else:
 # branch. In normal execution, it has not been called yet.
 try:
     st.set_page_config(
-        page_title="Cardiac DSES Digital Twin",
+        page_title="Cardio-Thermodynamic Digital Twin",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -490,7 +490,7 @@ st.markdown(
     """
     <section class="hero">
       <div class="hero-eyebrow">Computational Cardiology · Research Prototype</div>
-      <h1>Cardiac Digital Twin</h1>
+      <h1>Cardio-Thermodynamic Digital Twin</h1>
       <p>Disease-Specific Entropy Signature (DSES) analysis and 28-class model inference</p>
     </section>
     """,
