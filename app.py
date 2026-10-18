@@ -1083,53 +1083,108 @@ if "result" in st.session_state:
         st.header("28-Class DSES Architecture")
         st.caption("Workflow from resting patient inputs to the final disease-probability ranking.")
 
-        pipeline = go.Figure(
-            go.Sankey(
-                node=dict(
-                    label=[
-                        "Patient at Rest",
-                        "Digital Twin",
-                        "28 Patient DSES",
-                        "Expected-DSES RF",
-                        "28 Expected DSES",
-                        "28 DSES Residuals",
-                        "5 Global Stresses",
-                        "5 DT Physiology",
-                        "Clinical Layer",
-                        "Final 28-Class Classifier",
-                        "28 Disease Probabilities",
-                    ],
-                    color=[
-                        BAR, BLUE, TEAL, BLUE, TEAL, TEAL,
-                        TEAL, TEAL, TEAL, RED, RED,
-                    ],
-                    pad=18,
-                    thickness=18,
-                ),
-                link=dict(
-                    source=[
-                        0, 1, 2, 3, 4,
-                        5, 6, 7, 8, 9
-                    ],
-                    target=[
-                        1, 2, 3, 4, 5,
-                        6, 7, 8, 9, 10
-                    ],
-                    value=[1] * 10,
-                    color="rgba(46,134,193,0.28)",
-                ),
+        # Use a fixed, multi-row workflow rather than a Sankey diagram.
+        # A single-chain Sankey compresses each stage into narrow vertical
+        # bars and causes long labels to overlap at common screen widths.
+        pipeline = go.Figure()
+
+        pipeline_nodes = [
+            ("Patient<br>at Rest", 0.12, 0.80, NAVY),
+            ("Digital<br>Twin", 0.373, 0.80, BLUE),
+            ("28 Patient-DSES<br>Values", 0.627, 0.80, TEAL),
+            ("Expected-DSES<br>Random Forest", 0.88, 0.80, BLUE),
+            ("28 Expected-DSES<br>Values", 0.88, 0.50, TEAL),
+            ("28 DSES<br>Residuals", 0.627, 0.50, TEAL),
+            ("5 Global Stress<br>Features", 0.373, 0.50, TEAL),
+            ("5 DT Physiology<br>Features", 0.12, 0.50, TEAL),
+            ("Clinical Feature<br>Layer", 0.12, 0.20, TEAL),
+            ("Final 28-Class<br>Classifier", 0.373, 0.20, RED),
+            ("28 Disease<br>Probabilities", 0.627, 0.20, RED),
+        ]
+
+        box_half_width = 0.102
+        box_half_height = 0.085
+
+        # Draw arrows first so the node cards sit cleanly above the connectors.
+        for source, target in zip(pipeline_nodes, pipeline_nodes[1:]):
+            _, x1, y1, _ = source
+            _, x2, y2, _ = target
+
+            if abs(y1 - y2) < 1e-9:
+                direction = 1 if x2 > x1 else -1
+                start_x = x1 + direction * box_half_width
+                end_x = x2 - direction * box_half_width
+                start_y = end_y = y1
+            else:
+                direction = -1 if y2 < y1 else 1
+                start_x = end_x = x1
+                start_y = y1 + direction * box_half_height
+                end_y = y2 - direction * box_half_height
+
+            pipeline.add_annotation(
+                x=end_x,
+                y=end_y,
+                ax=start_x,
+                ay=start_y,
+                xref="x",
+                yref="y",
+                axref="x",
+                ayref="y",
+                text="",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1.1,
+                arrowwidth=1.6,
+                arrowcolor=BLUE,
             )
-        )
+
+        # Draw readable, consistently sized cards for every architecture stage.
+        for label, x, y, accent in pipeline_nodes:
+            pipeline.add_shape(
+                type="rect",
+                xref="x",
+                yref="y",
+                x0=x - box_half_width,
+                x1=x + box_half_width,
+                y0=y - box_half_height,
+                y1=y + box_half_height,
+                line=dict(color=accent, width=2),
+                fillcolor=CARD_BG,
+                layer="below",
+            )
+            pipeline.add_annotation(
+                x=x,
+                y=y,
+                xref="x",
+                yref="y",
+                text=label,
+                showarrow=False,
+                align="center",
+                xanchor="center",
+                yanchor="middle",
+                font=dict(family="Inter, Segoe UI, sans-serif", size=12, color=TEXT),
+            )
 
         pipeline.update_layout(
-            title="Final Cardiac DSES Prediction Pipeline",
+            title=dict(
+                text="Final Cardiac DSES Prediction Pipeline",
+                x=0.01,
+                xanchor="left",
+            ),
+            showlegend=False,
+            hovermode=False,
+            plot_bgcolor=CARD_BG,
+            paper_bgcolor=CARD_BG,
         )
+        pipeline.update_xaxes(visible=False, range=[0, 1], fixedrange=True)
+        pipeline.update_yaxes(visible=False, range=[0, 1], fixedrange=True)
 
-        style_fig(pipeline, height=400)
+        style_fig(pipeline, height=500)
 
         st.plotly_chart(
             pipeline,
             use_container_width=True,
+            config={"displaylogo": False, "responsive": True},
         )
 
         # ----------------------------------------------------
