@@ -323,66 +323,80 @@ def _detect_dark_theme():
 IS_DARK = _detect_dark_theme()
 
 # ---------- Colour palette ----------
-# Every text colour below is defined together with the background it sits
-# on, so text stays readable in both light and dark mode.
-NAVY = "#1F2A44"
-RED = "#B03A2E"
-TEAL = "#148F77"
-BLUE = "#2E86C1"
-GREY = "#6B7280"
+# A restrained clinical dashboard palette with readable light/dark themes.
+NAVY = "#17324D"
+RED = "#D6534A"
+TEAL = "#138577"
+BLUE = "#397BA5"
+GREY = "#758396"
 
 if IS_DARK:
-    TEXT = "#E8ECF4"
-    MUTED = "#9AA6BD"
-    CARD_BG = "#1B2233"
-    CARD_BORDER = "#2E3850"
-    GRID = "#2E3850"
-    BAR = "#6C8EBF"
-    TAB_BG = "#1B2233"
-    TAB_SEL = "#3A4F7A"
-    HERO_BG = "#141B2D"
+    TEXT = "#EAF0F7"
+    MUTED = "#AAB7C8"
+    CARD_BG = "#172333"
+    CARD_BORDER = "#2B3B50"
+    GRID = "#2B3B50"
+    BAR = "#83A9C7"
+    TAB_BG = "#1A293B"
+    TAB_SEL = "#24566B"
+    HERO_BG = "#102033"
+    PAGE_BG = "#0D1724"
 else:
-    TEXT = "#1F2A44"
-    MUTED = "#6B7280"
+    TEXT = "#203247"
+    MUTED = "#68798B"
     CARD_BG = "#FFFFFF"
-    CARD_BORDER = "#DDE2EC"
-    GRID = "#E9ECF3"
+    CARD_BORDER = "#DCE5ED"
+    GRID = "#E8EEF3"
     BAR = NAVY
-    TAB_BG = "#F1F3F8"
+    TAB_BG = "#EEF3F7"
     TAB_SEL = NAVY
-    HERO_BG = NAVY
+    HERO_BG = "#17324D"
+    PAGE_BG = "#F5F8FB"
 
 CUSTOM_CSS = """
 <style>
-/* ---------- page ---------- */
+/* ---------- page foundation ---------- */
 .block-container {
-    padding-top: 1.4rem;
+    max-width: 1580px;
+    padding-top: 1.45rem;
     padding-bottom: 3rem;
-    max-width: 1450px;
 }
 html, body, [class*="css"] {
     font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
-footer {visibility: hidden;}
-#MainMenu {visibility: hidden;}
+[data-testid="stAppViewContainer"] {
+    background: __PAGE_BG__;
+}
+[data-testid="stHeader"] {
+    background: transparent;
+}
+footer, #MainMenu { visibility: hidden; }
 
 /* ---------- sidebar ---------- */
 [data-testid="stSidebar"] {
     background: __HERO_BG__;
+    border-right: 1px solid rgba(255,255,255,0.08);
 }
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
-[data-testid="stSidebar"] span {
-    color: #EEF1F7 !important;
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+    color: #EEF3F8 !important;
 }
 [data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.16);
+    margin: 0.8rem 0;
 }
-/* inputs: explicit light field + dark text so they read in any theme.
-   The background must be set on every nested element Streamlit paints. */
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.035);
+    margin-bottom: 0.65rem;
+}
+/* Keep fields bright and legible against the dark sidebar. */
 [data-testid="stSidebar"] [data-baseweb="input"],
 [data-testid="stSidebar"] [data-baseweb="input"] > div,
 [data-testid="stSidebar"] [data-baseweb="base-input"],
@@ -394,86 +408,104 @@ footer {visibility: hidden;}
 }
 [data-testid="stSidebar"] input,
 [data-testid="stSidebar"] [data-baseweb="select"] * {
-    color: #1F2A44 !important;
+    color: #203247 !important;
 }
 [data-testid="stSidebar"] input {
-    -webkit-text-fill-color: #1F2A44 !important;
+    -webkit-text-fill-color: #203247 !important;
 }
 [data-testid="stSidebar"] [data-testid="stNumberInput"] button {
-    background: #E9ECF3 !important;
-    color: #1F2A44 !important;
+    background: #E9EFF4 !important;
+    color: #203247 !important;
+    border-color: #D8E2EB !important;
 }
 
-/* ---------- header banner ---------- */
+/* ---------- main title banner ---------- */
 .hero {
-    background: __HERO_BG__;
-    border-left: 5px solid __RED__;
-    border-radius: 8px;
-    padding: 20px 28px;
-    margin-bottom: 18px;
+    background: linear-gradient(120deg, __HERO_BG__ 0%, #204B62 100%);
+    border-left: 5px solid __TEAL__;
+    border-radius: 14px;
+    padding: 24px 30px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 8px 24px rgba(20, 43, 63, 0.10);
 }
 .hero h1 {
     color: #FFFFFF !important;
     margin: 0;
     padding: 0;
-    font-size: 1.75rem;
-    font-weight: 700;
+    font-size: clamp(1.55rem, 2.2vw, 2rem);
+    font-weight: 750;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
 }
 .hero p {
-    color: #C9D2E3 !important;
-    margin: 6px 0 0 0;
-    font-size: 0.95rem;
+    color: #D9E6EF !important;
+    margin: 8px 0 0 0;
+    font-size: 0.98rem;
 }
 .hero .hero-meta {
-    color: #9FB0CC !important;
+    color: #B7CBD9 !important;
     font-size: 0.82rem;
-    margin-top: 8px;
+    margin-top: 10px;
+    letter-spacing: 0.015em;
 }
 
-/* ---------- metric cards (background and text set together) ---------- */
+/* ---------- metric cards ---------- */
 [data-testid="stMetric"] {
     background: __CARD_BG__;
     border: 1px solid __CARD_BORDER__;
-    border-left: 4px solid __RED__;
-    border-radius: 8px;
-    padding: 14px 18px;
+    border-top: 3px solid __TEAL__;
+    border-radius: 12px;
+    padding: 15px 17px;
+    min-height: 108px;
+    box-shadow: 0 3px 12px rgba(30, 55, 75, 0.035);
 }
 [data-testid="stMetricLabel"] p {
     color: __MUTED__ !important;
-    font-weight: 600;
-    font-size: 0.80rem;
+    font-weight: 650;
+    font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.045em;
 }
 [data-testid="stMetricValue"],
 [data-testid="stMetricValue"] div {
     color: __TEXT__ !important;
-    font-weight: 700;
-    font-size: 1.35rem;
+    font-weight: 750;
+    font-size: 1.3rem;
     white-space: normal;
+    overflow-wrap: anywhere;
 }
 
-/* ---------- section headers (colour inherited from theme) ---------- */
+/* ---------- section typography ---------- */
+h1, h2, h3 { letter-spacing: -0.015em; }
 h2 {
-    font-weight: 700;
-    border-bottom: 2px solid __CARD_BORDER__;
-    padding-bottom: 6px;
-    margin-top: 1.2rem;
+    font-weight: 720;
+    border-bottom: 1px solid __CARD_BORDER__;
+    padding-bottom: 0.5rem;
+    margin-top: 1.3rem;
+}
+h3 { font-weight: 680; }
+[data-testid="stCaptionContainer"] p {
+    color: __MUTED__;
 }
 
 /* ---------- tabs ---------- */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
-    border-bottom: 1px solid __CARD_BORDER__;
+    gap: 5px;
+    background: __TAB_BG__;
+    border: 1px solid __CARD_BORDER__;
+    border-radius: 12px;
+    padding: 5px;
 }
 .stTabs [data-baseweb="tab"] {
-    background: __TAB_BG__;
-    border-radius: 6px 6px 0 0;
-    padding: 9px 18px;
+    background: transparent;
+    border-radius: 8px;
+    padding: 9px 16px;
+    min-height: 42px;
 }
 .stTabs [data-baseweb="tab"] p {
     color: __TEXT__ !important;
-    font-weight: 600;
+    font-weight: 650;
+    font-size: 0.9rem;
 }
 .stTabs [aria-selected="true"] {
     background: __TAB_SEL__ !important;
@@ -482,23 +514,41 @@ h2 {
     color: #FFFFFF !important;
 }
 
-/* ---------- buttons / tables ---------- */
+/* ---------- controls, alerts, tables, expanders ---------- */
 .stButton > button {
-    border-radius: 6px;
+    border-radius: 9px;
+    min-height: 44px;
     font-weight: 700;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.01em;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(25, 65, 85, 0.14);
 }
 [data-testid="stDataFrame"] {
     border: 1px solid __CARD_BORDER__;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
+    background: __CARD_BG__;
 }
+[data-testid="stAlert"] {
+    border-radius: 10px;
+}
+[data-testid="stExpander"] {
+    border: 1px solid __CARD_BORDER__;
+    border-radius: 10px;
+    background: __CARD_BG__;
+}
+hr { border-color: __CARD_BORDER__; }
 </style>
 """
 
 for _token, _value in {
     "__HERO_BG__": HERO_BG,
     "__RED__": RED,
+    "__TEAL__": TEAL,
+    "__PAGE_BG__": PAGE_BG,
     "__CARD_BG__": CARD_BG,
     "__CARD_BORDER__": CARD_BORDER,
     "__MUTED__": MUTED,
@@ -517,7 +567,7 @@ def style_fig(fig, height=None):
         template="plotly_dark" if IS_DARK else "plotly_white",
         font=dict(family="Inter, Segoe UI, sans-serif", size=13, color=TEXT),
         title=dict(font=dict(size=17, color=TEXT)),
-        margin=dict(l=20, r=20, t=60, b=30),
+        margin=dict(l=16, r=24, t=58, b=28),
         plot_bgcolor=CARD_BG,
         paper_bgcolor=CARD_BG,
         legend=dict(
@@ -655,166 +705,163 @@ except Exception as exc:
 
 with st.sidebar:
 
-    st.header("Patient Input")
+    st.header("Patient Profile")
+    st.caption("Enter resting measurements, then run the model.")
 
-    age = st.number_input(
-        "Age (years)",
-        min_value=18.0,
-        max_value=120.0,
-        value=55.0,
-        step=1.0,
-    )
+    with st.expander("Demographics", expanded=True):
+        age = st.number_input(
+            "Age (years)",
+            min_value=18.0,
+            max_value=120.0,
+            value=55.0,
+            step=1.0,
+        )
 
-    sex = st.selectbox(
-        "Biological Sex",
-        ["Female", "Male"],
-    )
+        sex = st.selectbox(
+            "Biological Sex",
+            ["Female", "Male"],
+        )
 
-    height = st.number_input(
-        "Height (cm)",
-        min_value=80.0,
-        max_value=230.0,
-        value=170.0,
-        step=0.1,
-    )
+        height = st.number_input(
+            "Height (cm)",
+            min_value=80.0,
+            max_value=230.0,
+            value=170.0,
+            step=0.1,
+        )
 
-    weight = st.number_input(
-        "Weight (kg)",
-        min_value=20.0,
-        max_value=250.0,
-        value=75.0,
-        step=0.1,
-    )
+        weight = st.number_input(
+            "Weight (kg)",
+            min_value=20.0,
+            max_value=250.0,
+            value=75.0,
+            step=0.1,
+        )
+
+    with st.expander("Hemodynamics", expanded=True):
+        hr = st.number_input(
+            "Resting Heart Rate (bpm)",
+            min_value=30.0,
+            max_value=200.0,
+            value=70.0,
+            step=1.0,
+        )
+
+        sbp = st.number_input(
+            "Systolic BP (mmHg)",
+            min_value=70.0,
+            max_value=250.0,
+            value=120.0,
+            step=1.0,
+        )
+
+        dbp = st.number_input(
+            "Diastolic BP (mmHg)",
+            min_value=40.0,
+            max_value=160.0,
+            value=80.0,
+            step=1.0,
+        )
+
+        edv = st.number_input(
+            "End-Diastolic Volume (mL)",
+            min_value=20.0,
+            max_value=500.0,
+            value=150.0,
+            step=1.0,
+        )
+
+        esv = st.number_input(
+            "End-Systolic Volume (mL)",
+            min_value=5.0,
+            max_value=400.0,
+            value=60.0,
+            step=1.0,
+        )
+
+        pawp = st.number_input(
+            "PAWP (mmHg)",
+            min_value=0.0,
+            max_value=40.0,
+            value=12.0,
+            step=0.1,
+        )
+
+        myocardial_mass = st.number_input(
+            "Myocardial Mass (g)",
+            min_value=50.0,
+            max_value=500.0,
+            value=150.0,
+            step=1.0,
+        )
+
+    with st.expander("Laboratory & Physiology", expanded=False):
+        core_temp = st.number_input(
+            "Core Temperature (°C)",
+            min_value=34.0,
+            max_value=41.0,
+            value=37.0,
+            step=0.01,
+        )
+
+        spo2 = st.number_input(
+            "SpO₂ (%)",
+            min_value=70.0,
+            max_value=100.0,
+            value=98.0,
+            step=0.1,
+        )
+
+        ph = st.number_input(
+            "Arterial pH",
+            min_value=6.8,
+            max_value=7.8,
+            value=7.40,
+            step=0.001,
+        )
+
+        fbs = st.number_input(
+            "Fasting Blood Sugar (mg/dL)",
+            min_value=50.0,
+            max_value=500.0,
+            value=90.0,
+            step=1.0,
+        )
+
+        chol = st.number_input(
+            "Serum Cholesterol (mg/dL)",
+            min_value=80.0,
+            max_value=500.0,
+            value=200.0,
+            step=1.0,
+        )
+
+    with st.expander("Clinical Phenotype", expanded=True):
+        chest_pain = st.selectbox(
+            "Chest Pain Type",
+            [
+                "asymptomatic",
+                "typical angina",
+                "atypical angina",
+                "non-anginal pain",
+            ],
+        )
+
+        rest_ecg = st.selectbox(
+            "Resting ECG",
+            [
+                "Normal",
+                "Left ventricular hypertrophy",
+                "ST-T wave abnormality",
+            ],
+        )
 
     st.divider()
-
-    st.subheader("Hemodynamics")
-
-    hr = st.number_input(
-        "Resting Heart Rate (bpm)",
-        min_value=30.0,
-        max_value=200.0,
-        value=70.0,
-        step=1.0,
-    )
-
-    sbp = st.number_input(
-        "Systolic BP (mmHg)",
-        min_value=70.0,
-        max_value=250.0,
-        value=120.0,
-        step=1.0,
-    )
-
-    dbp = st.number_input(
-        "Diastolic BP (mmHg)",
-        min_value=40.0,
-        max_value=160.0,
-        value=80.0,
-        step=1.0,
-    )
-
-    edv = st.number_input(
-        "End-Diastolic Volume (mL)",
-        min_value=20.0,
-        max_value=500.0,
-        value=150.0,
-        step=1.0,
-    )
-
-    esv = st.number_input(
-        "End-Systolic Volume (mL)",
-        min_value=5.0,
-        max_value=400.0,
-        value=60.0,
-        step=1.0,
-    )
-
-    pawp = st.number_input(
-        "PAWP (mmHg)",
-        min_value=0.0,
-        max_value=40.0,
-        value=12.0,
-        step=0.1,
-    )
-
-    myocardial_mass = st.number_input(
-        "Myocardial Mass (g)",
-        min_value=50.0,
-        max_value=500.0,
-        value=150.0,
-        step=1.0,
-    )
-
-    core_temp = st.number_input(
-        "Core Temperature (°C)",
-        min_value=34.0,
-        max_value=41.0,
-        value=37.0,
-        step=0.01,
-    )
-
-    spo2 = st.number_input(
-        "SpO₂ (%)",
-        min_value=70.0,
-        max_value=100.0,
-        value=98.0,
-        step=0.1,
-    )
-
-    ph = st.number_input(
-        "Arterial pH",
-        min_value=6.8,
-        max_value=7.8,
-        value=7.40,
-        step=0.001,
-    )
-
-    fbs = st.number_input(
-        "Fasting Blood Sugar (mg/dL)",
-        min_value=50.0,
-        max_value=500.0,
-        value=90.0,
-        step=1.0,
-    )
-
-    chol = st.number_input(
-        "Serum Cholesterol (mg/dL)",
-        min_value=80.0,
-        max_value=500.0,
-        value=200.0,
-        step=1.0,
-    )
-
-    st.divider()
-
-    st.subheader("Clinical Phenotype")
-
-    chest_pain = st.selectbox(
-        "Chest Pain Type",
-        [
-            "asymptomatic",
-            "typical angina",
-            "atypical angina",
-            "non-anginal pain",
-        ],
-    )
-
-    rest_ecg = st.selectbox(
-        "Resting ECG",
-        [
-            "Normal",
-            "Left ventricular hypertrophy",
-            "ST-T wave abnormality",
-        ],
-    )
-
     run_button = st.button(
-        "RUN 28-CLASS MODEL",
+        "Run 28-Class Model",
         type="primary",
         use_container_width=True,
     )
-
 
 # ============================================================
 # 7. PATIENT DICTIONARY
@@ -992,38 +1039,21 @@ if "result" in st.session_state:
     # TOP METRICS
     # ========================================================
 
-    st.header("Final Prediction")
+    st.header("Prediction Overview")
+    st.caption("Top-ranked output and key resting physiological estimates.")
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    metric_row_1 = st.columns([1.5, 1, 1], gap="medium")
+    metric_row_1[0].metric("Predicted Disease", top_disease)
+    metric_row_1[1].metric("Model Probability", f"{top_probability:.2%}")
+    metric_row_1[2].metric("Ejection Fraction", f"{common['EF'] * 100:.2f}%")
 
-    c1.metric(
-        "Predicted Disease",
-        top_disease,
-    )
+    metric_row_2 = st.columns(2, gap="medium")
+    metric_row_2[0].metric("Stroke Volume", f"{common['SV']:.2f} mL")
+    metric_row_2[1].metric("Mean Arterial Pressure", f"{common['MAP']:.2f} mmHg")
 
-    c2.metric(
-        "Model Probability",
-        f"{top_probability:.2%}",
-    )
-
-    c3.metric(
-        "Stroke Volume",
-        f"{common['SV']:.2f} mL",
-    )
-
-    c4.metric(
-        "Ejection Fraction",
-        f"{common['EF'] * 100:.2f}%",
-    )
-
-    c5.metric(
-        "MAP",
-        f"{common['MAP']:.2f} mmHg",
-    )
-
-    st.success(
-        f"Top 28-class prediction: **{top_disease}** "
-        f"with model probability **{top_probability:.2%}**."
+    st.caption(
+        "Research prototype: model probabilities are not clinically calibrated "
+        "diagnostic probabilities and should not be used alone for clinical decisions."
     )
 
     # ========================================================
@@ -1032,10 +1062,10 @@ if "result" in st.session_state:
 
     tab_pred, tab_dses, tab_stress, tab_react, tab_info = st.tabs(
         [
-            "Prediction",
+            "Overview",
             "DSES Analysis",
             "Stress & Physiology",
-            "Reaction Detail",
+            "Reaction Details",
             "Model Info",
         ]
     )
@@ -1051,6 +1081,7 @@ if "result" in st.session_state:
         # ----------------------------------------------------
 
         st.header("28-Class DSES Architecture")
+        st.caption("Workflow from resting patient inputs to the final disease-probability ranking.")
 
         pipeline = go.Figure(
             go.Sankey(
@@ -1102,90 +1133,72 @@ if "result" in st.session_state:
         )
 
         # ----------------------------------------------------
-        # 28-CLASS RANKING TABLE
+        # RANKING TABLE + TOP-10 CHART
         # ----------------------------------------------------
 
-        st.header("28-Class Disease Ranking")
+        rank_col, chart_col = st.columns([1.05, 1.0], gap="large")
 
-        ranking = final_predictions.copy()
+        with rank_col:
+            st.subheader("28-Class Disease Ranking")
 
-        ranking.insert(
-            0,
-            "Rank",
-            np.arange(
-                1,
-                len(ranking) + 1,
-            ),
-        )
+            ranking = final_predictions.copy()
+            ranking.insert(0, "Rank", np.arange(1, len(ranking) + 1))
+            ranking["Probability"] = ranking["Probability"] * 100.0
 
-        ranking["Probability"] = (
-            ranking["Probability"] * 100.0
-        )
-
-        st.dataframe(
-            ranking[
-                [
-                    "Rank",
-                    "Disease",
-                    "Probability",
-                ]
-            ],
-            column_config={
-                "Rank": st.column_config.NumberColumn(
-                    "Rank",
-                    width="small",
-                ),
-                "Disease": st.column_config.TextColumn(
-                    "Disease",
-                    width="large",
-                ),
-                "Probability": st.column_config.ProgressColumn(
-                    "Probability",
-                    format="%.2f%%",
-                    min_value=0.0,
-                    max_value=100.0,
-                ),
-            },
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        # ----------------------------------------------------
-        # TOP 10 CHART
-        # ----------------------------------------------------
-
-        top10 = (
-            ranking
-            .head(10)
-            .iloc[::-1]
-        )
-
-        # Highlight the #1 prediction (last row after reversal).
-        top10_colors = [BAR] * (len(top10) - 1) + [RED]
-
-        fig_top10 = go.Figure(
-            go.Bar(
-                x=top10["Probability"],
-                y=top10["Disease"],
-                orientation="h",
-                marker=dict(color=top10_colors),
-                text=[f"{v:.2f}%" for v in top10["Probability"]],
-                textposition="outside",
+            st.dataframe(
+                ranking[["Rank", "Disease", "Probability"]],
+                column_config={
+                    "Rank": st.column_config.NumberColumn(
+                        "Rank",
+                        width="small",
+                    ),
+                    "Disease": st.column_config.TextColumn(
+                        "Disease",
+                        width="large",
+                    ),
+                    "Probability": st.column_config.ProgressColumn(
+                        "Probability",
+                        format="%.2f%%",
+                        min_value=0.0,
+                        max_value=100.0,
+                    ),
+                },
+                use_container_width=True,
+                hide_index=True,
+                height=520,
             )
-        )
 
-        fig_top10.update_layout(
-            title="Top 10 Final 28-Class Predictions",
-            xaxis_title="Classifier Probability (%)",
-            yaxis_title="Disease",
-        )
+        with chart_col:
+            st.subheader("Top 10 Predictions")
 
-        style_fig(fig_top10, height=520)
+            top10 = ranking.head(10).iloc[::-1]
+            top10_colors = [BAR] * (len(top10) - 1) + [RED]
 
-        st.plotly_chart(
-            fig_top10,
-            use_container_width=True,
-        )
+            fig_top10 = go.Figure(
+                go.Bar(
+                    x=top10["Probability"],
+                    y=top10["Disease"],
+                    orientation="h",
+                    marker=dict(color=top10_colors),
+                    text=[f"{value:.2f}%" for value in top10["Probability"]],
+                    textposition="outside",
+                    cliponaxis=False,
+                )
+            )
+
+            fig_top10.update_layout(
+                title="Highest-Ranked Disease Predictions",
+                xaxis_title="Model Probability (%)",
+                yaxis_title="",
+                showlegend=False,
+            )
+            style_fig(fig_top10, height=520)
+            fig_top10.update_xaxes(range=[0, max(1, float(top10["Probability"].max()) * 1.2)])
+
+            st.plotly_chart(
+                fig_top10,
+                use_container_width=True,
+            )
 
     # ========================================================
     # PATIENT DSES / EXPECTED DSES / RESIDUALS
@@ -1731,6 +1744,6 @@ if "result" in st.session_state:
 else:
 
     st.info(
-        "Enter the patient's resting parameters in the sidebar "
-        "and click **RUN 28-CLASS MODEL**."
+        "Complete the patient inputs in the sidebar, then select "
+        "**Run 28-Class Model** to view the prediction and supporting analyses."
     )
